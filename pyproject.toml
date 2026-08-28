@@ -1,0 +1,31 @@
+[project]
+name = "blogforge-ai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "jaskaranvirk01", email = "virk7184@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.141.1",
+    "langchain>=1.3.18",
+    "langchain-tavily>=0.2.18",
+    "langgraph>=1.2.11",
+    "pydantic>=2.13.4",
+    "pydantic-settings>=2.15.0",
+    "tavily>=1.1.0",
+    "uvicorn>=0.52.4",
+]
+
+[project.scripts]
+blogforge-ai = "blogforge_ai:main"
+
+[build-system]
+requires = ["uv_build>=0.12.3,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

@@ -18,7 +18,13 @@ class ResearchQuery(BaseModel):
     purpose: str = Field(min_length=1)
 
 
+# Research Plan
+class ResearchPlan(BaseModel):
+    queries: list[ResearchQuery]
+
 # Represents a discovered source:
+
+
 class ResearchSource(BaseModel):
     source_id: str
     title: str

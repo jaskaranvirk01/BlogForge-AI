@@ -106,3 +106,16 @@ class SourceSelection(BaseModel):
 class SourceSelectionInput(BaseModel):
     research_plan: ResearchPlan
     search_output: SearchOutput
+
+
+# Selected Source Data
+class SelectedSourceData(BaseModel):
+    source: SearchResult
+    selection_reason: str = Field(min_length=1)
+    extracted_content: ExtractionOutput | None = None
+
+
+# Research Result
+class ResearchResult(BaseModel):
+    research_plan: ResearchPlan
+    selected_sources: list[SelectedSourceData]

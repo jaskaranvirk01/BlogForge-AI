@@ -1,5 +1,5 @@
 from blogforge_ai.tools.research_tools import web_search_tool, extract_content_tool
-from blogforge_ai.schemas.research_schemas import BlogRequest,  ResearchPlan, SearchInput, SearchOutput, SourceSelection, SourceSelectionInput
+from blogforge_ai.schemas.research_schemas import BlogRequest,  ResearchPlan, SearchInput, SearchOutput, SourceSelection, SourceSelectionInput,  SelectedSourceData, ExtractionInput, ResearchResult
 from blogforge_ai.llm.client import llm
 from langchain_core.messages import SystemMessage, HumanMessage
 from blogforge_ai.prompts.research_prompts import RESEARCH_PLANNING_PROMPT, RESEARCH_SOURCE_SELECTION_PROMPT
@@ -17,6 +17,7 @@ class ResearchAgent:
             SourceSelection)
 
     def plan_research(self, blog_request: BlogRequest) -> ResearchPlan:
+
         messages = [SystemMessage(content=RESEARCH_PLANNING_PROMPT), HumanMessage(
             content=blog_request.model_dump_json(indent=2))]
 
@@ -26,7 +27,7 @@ class ResearchAgent:
         queries = research_plan.queries
 
         search_results = []
-
+        seen_source_ids = set()
         for research_query in queries:
             search_input = SearchInput(
                 query=research_query.query, max_results=max_results)
@@ -34,13 +35,17 @@ class ResearchAgent:
                 {'search_input': search_input})
 
             for result in response.results:
-                search_results.append(result)
+                if result.id not in seen_source_ids:
+                    search_results.append(result)
+                    seen_source_ids.add(result.id)
 
         return SearchOutput(results=search_results)
 
     def select_sources(self, research_plan: ResearchPlan, search_output: SearchOutput) -> SourceSelection:
+
         source_selection_input = SourceSelectionInput(
             research_plan=research_plan, search_output=search_output)
+
         messages = [SystemMessage(
             content=RESEARCH_SOURCE_SELECTION_PROMPT),
             HumanMessage(
@@ -48,40 +53,60 @@ class ResearchAgent:
 
         return self.source_selection_llm.invoke(messages)
 
+    def get_selected_sources(self, source_selection: SourceSelection, search_output: SearchOutput) -> list[SelectedSourceData]:
 
-# =============================================================================
-blog_request = BlogRequest(
-    topic="Impact of Artificial Intelligence on Software Development",
-    target_audience="Software developers",
-    content_type="technical blog",
-    desired_length=1500,
-    tone="professional",
-    additional_instructions="Focus on practical benefits, risks, and current trends",
-)
+        results_by_id = {
+            result.id: result
+            for result in search_output.results
+        }
 
-RA = ResearchAgent()
-research_plan = RA.plan_research(blog_request=blog_request)
-search_output = RA.search_sources(research_plan=research_plan, max_results=3)
-source_selection = RA.select_sources(
-    research_plan=research_plan, search_output=search_output)
-print('Research Plan')
-print()
-print(research_plan)
-print()
-print('Search Output')
-print()
-print(search_output)
-print()
-print('Selected Sources')
-print()
-print(source_selection)
-print()
+        selected_sources = []
+
+        for selected_source in source_selection.selected_sources:
+            result = results_by_id.get(selected_source.source_id)
+
+            if result:
+                selected_sources.append(
+                    SelectedSourceData(
+                        source=result, selection_reason=selected_source.reason)
+                )
+
+        return selected_sources
+
+    def extract_selected_sources(self, selected_sources: list[SelectedSourceData]) -> list[SelectedSourceData]:
+        extracted_sources = []
+
+        for selected_source in selected_sources:
+            extraction_input = ExtractionInput(
+                url=selected_source.source.url, title=selected_source.source.title)
+
+            extracted_output = self.extract_content_tool.invoke(
+                {'source': extraction_input})
+
+            extracted_sources.append(
+                SelectedSourceData(source=selected_source.source, selection_reason=selected_source.selection_reason,
+                                   extracted_content=extracted_output)
+            )
+
+        return extracted_sources
+
+    # def research(self, blog_request: BlogRequest) -> ResearchResult:
+
+    #     research_plan = self._plan_research(blog_request=blog_request)
+
+    #     search_output = self._search_sources(
+    #         research_plan=research_plan, max_results=3)
+
+    #     source_selection = self._select_sources(
+    #         research_plan=research_plan, search_output=search_output)
+
+    #     selected_sources = self._get_selected_sources(
+    #         source_selection=source_selection, search_output=search_output)
+
+    #     extracted_sources = self._extract_selected_sources(
+    #         selected_sources=selected_sources)
+
+    #     return ResearchResult(research_plan=research_plan, selected_sources=extracted_sources)
 
 
-print()
-
-for selected_source in source_selection.selected_sources:
-    for search_result in search_output.results:
-        if selected_source.source_id == search_result.id:
-            print(f"id : {selected_source.source_id}")
-            print(selected_source.reason)
+research_agent = ResearchAgent()

@@ -64,6 +64,7 @@ class SearchResult(BaseModel):
     url: str
     content: str
     score: float
+    id: str
 
 
 # Web Search Output
@@ -88,3 +89,20 @@ class ExtractedContent(BaseModel):
 # Extraction Output
 class ExtractionOutput(BaseModel):
     content: ExtractedContent
+
+
+# Selected Source
+class SelectedSource(BaseModel):
+    source_id: str
+    reason: str
+
+
+# List of selected sources
+class SourceSelection(BaseModel):
+    selected_sources: list[SelectedSource]
+
+
+# Input Schema for LLM to select sources
+class SourceSelectionInput(BaseModel):
+    research_plan: ResearchPlan
+    search_output: SearchOutput

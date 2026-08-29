@@ -19,7 +19,8 @@ def web_search_tool(search_input: SearchInput) -> SearchOutput | None:
                 title=result['title'],
                 url=result['url'],
                 content=result['content'],
-                score=result['score']
+                score=result['score'],
+                id=result['id']
             ))
         return SearchOutput(
             results=results
@@ -44,15 +45,3 @@ def extract_content_tool(source: ExtractionInput) -> ExtractionOutput | None:
         )
     except Exception as e:
         raise e
-
-
-source = ExtractionInput(
-    url='https://en.wikipedia.org/wiki/Elon_Musk',
-    title='Elon Musk'
-)
-
-res = extract_content_tool.invoke({
-    'source': source
-})
-
-print(res)

@@ -5,6 +5,7 @@ from pydantic import Field
 class Settings(BaseSettings):
     tavily_api_key: str = Field(..., description='Tavily web search api key')
     mistral_api_key: str = Field(..., description='Mistral LLM api key')
+    embedding_model: str = Field(..., description='Model to create embeddings')
 
     model_config = SettingsConfigDict(
         env_file='.env',

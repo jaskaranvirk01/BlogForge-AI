@@ -1,3 +1,4 @@
+from uuid import UUID, uuid4
 from datetime import datetime
 from pydantic import BaseModel, Field
 
@@ -117,5 +118,6 @@ class SelectedSourceData(BaseModel):
 
 # Research Result
 class ResearchResult(BaseModel):
+    research_id: UUID = Field(default_factory=uuid4)
     research_plan: ResearchPlan
     selected_sources: list[SelectedSourceData]

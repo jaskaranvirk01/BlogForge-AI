@@ -13,6 +13,7 @@ class EmbeddingService:
         )
 
     def embed_chunks(self, chunks: list[ResearchChunk]) -> list[list[float]]:
+
         if not chunks:
             return []
 

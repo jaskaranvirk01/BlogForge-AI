@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     tavily_api_key: str = Field(..., description='Tavily web search api key')
     mistral_api_key: str = Field(..., description='Mistral LLM api key')
     embedding_model: str = Field(..., description='Model to create embeddings')
+    supabase_database_url: str = Field(...,
+                                       description=' Main database url for connection')
 
     model_config = SettingsConfigDict(
         env_file='.env',

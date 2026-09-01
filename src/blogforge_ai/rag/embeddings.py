@@ -23,3 +23,6 @@ class EmbeddingService:
 
     def embed_query(self, query: str) -> list[float]:
         return self.embeddings.embed_query(text=query)
+
+
+embedding_service = EmbeddingService()

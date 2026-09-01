@@ -43,26 +43,6 @@ class ResearchSource(Base):
         nullable=False
     )
 
-    domain: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False
-    )
-
-    snippet: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True
-    )
-
-    published_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True
-    )
-
-    retrieved_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False
-    )
-
     selection_reason: Mapped[str] = mapped_column(
         Text,
         nullable=False

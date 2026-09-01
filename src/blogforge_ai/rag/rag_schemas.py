@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 class ResearchChunk(BaseModel):
     chunk_id: UUID = Field(default_factory=uuid4)
     research_id: UUID
-    source_id: str
+    research_source_id: str
     content: str
     chunk_index: int
     source_title: str

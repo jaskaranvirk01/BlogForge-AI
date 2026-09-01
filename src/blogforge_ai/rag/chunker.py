@@ -27,7 +27,7 @@ class ChunkingService:
             for chunk_index, chunk in enumerate(text_chunks):
                 chunks.append(ResearchChunk(
                     research_id=research_result.research_id,
-                    source_id=selected_source.source.id,
+                    research_source_id=selected_source.source.id,
                     content=chunk,
                     chunk_index=chunk_index,
                     source_title=selected_source.source.title,
@@ -35,3 +35,6 @@ class ChunkingService:
                 ))
 
         return chunks
+
+
+chunking_service = ChunkingService()

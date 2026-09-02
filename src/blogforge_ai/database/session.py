@@ -32,3 +32,6 @@ class DatabaseManager:
             raise
         finally:
             db.close()
+
+
+db_manager = DatabaseManager()

@@ -7,7 +7,6 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from blogforge_ai.database.models.blog import Blog
     from blogforge_ai.database.models.research_source import ResearchSource
     from blogforge_ai.database.models.research_chunk import ResearchChunk
 
@@ -20,20 +19,6 @@ class Research(Base):
         primary_key=True,
         server_default=text('gen_random_uuid()')
     )
-
-    blog_id: Mapped[UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
-        ForeignKey('blogs.id', ondelete='CASCADE'),
-        unique=True,
-        nullable=False,
-        index=True
-    )
-
-    research_summary: Mapped[str] = mapped_column(
-        Text,
-        nullable=False
-    )
-
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -45,10 +30,6 @@ class Research(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False
-    )
-
-    blog: Mapped['Blog'] = relationship(
-        back_populates='research'
     )
 
     sources: Mapped[list['ResearchSource']] = relationship(

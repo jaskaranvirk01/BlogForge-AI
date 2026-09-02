@@ -1,11 +1,13 @@
 from blogforge_ai.rag.chunker import chunking_service
 from blogforge_ai.rag.embeddings import embedding_service
+from blogforge_ai.rag.rag_schemas import RetrievalResult
 from blogforge_ai.schemas.research_schemas import ResearchResult
 from blogforge_ai.database.models.research import Research
 from blogforge_ai.database.models.research_chunk import ResearchChunk
 from blogforge_ai.database.models.research_source import ResearchSource
 from blogforge_ai.rag.knowledge_base_repository import KnowledgeBaseRepository
 from blogforge_ai.database.session import db_manager
+from uuid import UUID
 
 
 class KnowledgeBaseService:
@@ -13,7 +15,7 @@ class KnowledgeBaseService:
         self.chunking_service = chunking_service
         self.embedding_service = embedding_service
 
-    def ingest_research(self, research_output: ResearchResult):
+    def ingest_research(self, research_output: ResearchResult) -> UUID:
 
         with db_manager.session() as session:
 
@@ -41,17 +43,28 @@ class KnowledgeBaseService:
 
         return saved_research.id
 
-    def retrieve_relevant_chunks(self, research_id, query: str, top_k: int = 5):
+    def retrieve_relevant_chunks(self, research_id, query: str, top_k: int = 5) -> list[RetrievalResult]:
         query_embedding = self.embedding_service.embed_query(query=query)
         with db_manager.session() as session:
             knowledge_repository = KnowledgeBaseRepository(session=session)
 
-            retrieved_chunks = knowledge_repository.retrieve_relevant_chunks(
+            retrieved_chunks = knowledge_repository.retrieve_similar_chunks(
                 research_id=research_id, query_embedding=query_embedding, top_k=top_k)
 
-        return retrieved_chunks
+            results = []
+            for chunk, source, cosine_distance in retrieved_chunks:
+                results.append(RetrievalResult(
+                    chunk_id=chunk.id,
+                    research_id=chunk.research_id,
+                    source_id=source.source_id,
+                    content=chunk.content,
+                    source_title=source.title,
+                    source_url=source.url,
+                    similarity_score=1-cosine_distance
+                ))
+            return results
 
-    def _create_research_chunks(self, research_output: ResearchResult, source_ids: dict, research_id) -> list[ResearchChunk]:
+    def _create_research_chunks(self, research_output: ResearchResult, source_ids: dict, research_id: UUID) -> list[ResearchChunk]:
         chunks = self.chunking_service.chunk_research(
             research_result=research_output)
 
@@ -74,7 +87,7 @@ class KnowledgeBaseService:
 
         return research_chunks
 
-    def _create_research_source(self, research_output: ResearchResult, research_id):
+    def _create_research_source(self, research_output: ResearchResult, research_id: UUID) -> list[ResearchSource]:
 
         research_sources = []
 

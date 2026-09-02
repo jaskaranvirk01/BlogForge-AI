@@ -1,5 +1,6 @@
 from typing import TypedDict
 from blogforge_ai.schemas.research_schemas import BlogRequest, ResearchPlan, SearchOutput, SourceSelection, SelectedSourceData, ResearchResult
+from uuid import UUID
 
 
 class ResearchState(TypedDict):
@@ -11,3 +12,4 @@ class ResearchState(TypedDict):
     extracted_sources: list[SelectedSourceData]
     research_result: ResearchResult
     research_status: str  # 'process stages'
+    research_id: UUID

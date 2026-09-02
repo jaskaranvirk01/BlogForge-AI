@@ -66,7 +66,7 @@ class KnowledgeBaseService:
 
     def _create_research_chunks(self, research_output: ResearchResult, source_ids: dict, research_id: UUID) -> list[ResearchChunk]:
         chunks = self.chunking_service.chunk_research(
-            research_result=research_output)
+            research_result=research_output, source_ids=source_ids)
 
         if not chunks:
             return []
@@ -76,10 +76,9 @@ class KnowledgeBaseService:
         research_chunks = []
 
         for chunk, embedding in zip(chunks, embeddings):
-            db_source_id = source_ids[chunk.research_source_id]
             research_chunks.append(ResearchChunk(
                 research_id=research_id,
-                research_source_id=db_source_id,
+                research_source_id=chunk.research_source_id,
                 content=chunk.content,
                 chunk_index=chunk.chunk_index,
                 embedding=embedding,
@@ -101,3 +100,6 @@ class KnowledgeBaseService:
             ))
 
         return research_sources
+
+
+knowledge_base_service = KnowledgeBaseService()

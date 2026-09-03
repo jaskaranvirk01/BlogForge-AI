@@ -1,9 +1,9 @@
 from blogforge_ai.llm.client import llm
-from blogforge_ai.schemas.analysis_schemas import AnalysisQuery, AnalysisQueries, AnalysisResult, AnalysisChunks, RetrievalResult
+from blogforge_ai.schemas.analysis_schemas import AnalysisQueries, AnalysisResult, AnalysisChunks, RetrievalResult
 from blogforge_ai.rag.knowledge_base_service import knowledge_base_service
 from langchain_core.messages import SystemMessage, HumanMessage
 from blogforge_ai.schemas.research_schemas import BlogRequest
-from blogforge_ai.prompts.analysis_prompts import QUERY_PLANNING_PROMPT
+from blogforge_ai.prompts.analysis_prompts import QUERY_PLANNING_PROMPT, ANALYSIS_PROMPT
 from uuid import UUID
 
 
@@ -14,6 +14,7 @@ class AnalysisAgent:
         self.query_planning_llm = self.llm.with_structured_output(
             AnalysisQueries)
         self.analysis_llm = self.llm.with_structured_output(AnalysisResult)
+        self.chunk_limit = 10
 
     def plan_retrieval_queries(self, blog_request: BlogRequest) -> AnalysisQueries:
         messages = [SystemMessage(
@@ -49,3 +50,31 @@ class AnalysisAgent:
                                )
 
         return sorted_chunks
+
+    def build_analysis_context(self, chunks: list[RetrievalResult]) -> str:
+        chunks_to_include = chunks[:self.chunk_limit]
+        evidence_blocks = []
+        for chunk, index in enumerate(chunks_to_include):
+            evidence_blocks.append(f'''\n
+            EVIDENCE - {index+1}\n
+            Source Id:{chunk.source_id}\n
+            Chunk Id:{chunk.chunk_id}\n
+            Source Title:{chunk.source_title}\n
+            Source URL:{chunk.source_url}\n
+            \n\n
+            Content :\n
+            {chunk.content}\n
+            ''')
+        return '\n\n'.join(evidence_blocks)
+
+    def generate_analysis(self, blog_request: BlogRequest, analysis_context: str) -> AnalysisResult:
+        messages = [SystemMessage(
+            content=ANALYSIS_PROMPT), HumanMessage(content=f'''
+            BLOG REQUEST: 
+            {blog_request.model_dump_json(indent=1)}
+            \n\n
+            ANALYSIS CONTEXT:
+            {analysis_context}
+            ''')]
+
+        return self.analysis_llm.invoke(messages)

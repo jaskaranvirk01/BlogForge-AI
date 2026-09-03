@@ -43,7 +43,7 @@ class KnowledgeBaseService:
 
         return saved_research.id
 
-    def retrieve_relevant_chunks(self, research_id, query: str, top_k: int = 5) -> list[RetrievalResult]:
+    def retrieve_relevant_chunks(self, research_id: UUID, query: str, top_k: int = 5) -> list[RetrievalResult]:
         query_embedding = self.embedding_service.embed_query(query=query)
         with db_manager.session() as session:
             knowledge_repository = KnowledgeBaseRepository(session=session)

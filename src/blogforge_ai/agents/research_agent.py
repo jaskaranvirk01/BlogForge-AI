@@ -1,5 +1,5 @@
 from blogforge_ai.tools.research_tools import web_search_tool, extract_content_tool
-from blogforge_ai.schemas.research_schemas import BlogRequest,  ResearchPlan, SearchInput, SearchOutput, SourceSelection, SourceSelectionInput,  SelectedSourceData, ExtractionInput, ResearchResult
+from blogforge_ai.schemas.research_schemas import BlogRequest,  ResearchPlan, SearchInput, SearchOutput, SourceSelection, SourceSelectionInput,  SelectedSourceData, ExtractionInput
 from blogforge_ai.llm.client import llm
 from langchain_core.messages import SystemMessage, HumanMessage
 from blogforge_ai.prompts.research_prompts import RESEARCH_PLANNING_PROMPT, RESEARCH_SOURCE_SELECTION_PROMPT
@@ -9,7 +9,6 @@ class ResearchAgent:
     def __init__(self):
         self.web_search_tool = web_search_tool
         self.extract_content_tool = extract_content_tool
-        self.knowledge_base_service = None  # once built will be added here
         self.llm = llm
         self.research_planning_llm = self.llm.with_structured_output(
             ResearchPlan)
@@ -89,24 +88,6 @@ class ResearchAgent:
             )
 
         return extracted_sources
-
-    # def research(self, blog_request: BlogRequest) -> ResearchResult:
-
-    #     research_plan = self._plan_research(blog_request=blog_request)
-
-    #     search_output = self._search_sources(
-    #         research_plan=research_plan, max_results=3)
-
-    #     source_selection = self._select_sources(
-    #         research_plan=research_plan, search_output=search_output)
-
-    #     selected_sources = self._get_selected_sources(
-    #         source_selection=source_selection, search_output=search_output)
-
-    #     extracted_sources = self._extract_selected_sources(
-    #         selected_sources=selected_sources)
-
-    #     return ResearchResult(research_plan=research_plan, selected_sources=extracted_sources)
 
 
 research_agent = ResearchAgent()

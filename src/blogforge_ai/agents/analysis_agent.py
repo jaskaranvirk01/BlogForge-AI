@@ -78,3 +78,6 @@ class AnalysisAgent:
             ''')]
 
         return self.analysis_llm.invoke(messages)
+
+
+analysis_agent = AnalysisAgent()

@@ -12,4 +12,5 @@ class AnalysisState(TypedDict):
     ranked_chunks: list[RetrievalResult]
     analysis_context: str
     generated_analysis: AnalysisResult
+    analysis_id: UUID
     analysis_status: str

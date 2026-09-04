@@ -1,5 +1,6 @@
 from blogforge_ai.agents.analysis_agent import analysis_agent
 from blogforge_ai.graph.states.analysis_state import AnalysisState
+from blogforge_ai.rag.knowledge_base_service import knowledge_base_service
 
 
 def query_planning_node(state: AnalysisState) -> dict:
@@ -49,4 +50,14 @@ def generate_analysis_node(state: AnalysisState) -> dict:
     return {
         'generated_analysis': analysis,
         'analysis_status': 'Analysis Generated'
+    }
+
+
+def save_analysis_node(state: AnalysisState) -> dict:
+    print(state['analysis_status'])
+    analysis_id = knowledge_base_service.ingest_analysis(
+        research_id=state['research_id'], analysis_result=state['generated_analysis'])
+    return {
+        'analysis_id': analysis_id,
+        'analysis_status': 'Analysis Saved'
     }

@@ -117,10 +117,18 @@ class KnowledgeBaseService:
             research_id=research_id,
             title=analysis_result.title,
             overview=analysis_result.overview,
-            developments=analysis_result.developments,
-            limitations=analysis_result.limitations,
-            future_scope=analysis_result.future_scope,
-            references=analysis_result.references
+            developments=[
+                item.model_dump(mode="json")
+                for item in analysis_result.developments],
+            limitations=[
+                item.model_dump(mode="json")
+                for item in analysis_result.limitations],
+            future_scope=[
+                item.model_dump(mode="json")
+                for item in analysis_result.future_scope],
+            references=[
+                item.model_dump(mode="json")
+                for item in analysis_result.references]
         )
 
 

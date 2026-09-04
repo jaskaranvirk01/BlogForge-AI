@@ -54,7 +54,7 @@ class AnalysisAgent:
     def build_analysis_context(self, chunks: list[RetrievalResult]) -> str:
         chunks_to_include = chunks[:self.chunk_limit]
         evidence_blocks = []
-        for chunk, index in enumerate(chunks_to_include):
+        for index, chunk in enumerate(chunks_to_include):
             evidence_blocks.append(f'''\n
             EVIDENCE - {index+1}\n
             Source Id:{chunk.source_id}\n

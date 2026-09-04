@@ -56,7 +56,7 @@ class KnowledgeBaseService:
                 results.append(RetrievalResult(
                     chunk_id=chunk.id,
                     research_id=chunk.research_id,
-                    source_id=source.source_id,
+                    source_id=source.id,
                     content=chunk.content,
                     source_title=source.title,
                     source_url=source.url,

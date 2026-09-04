@@ -5,6 +5,8 @@ from blogforge_ai.schemas.research_schemas import ResearchResult
 from blogforge_ai.database.models.research import Research
 from blogforge_ai.database.models.research_chunk import ResearchChunk
 from blogforge_ai.database.models.research_source import ResearchSource
+from blogforge_ai.database.models.analysis import Analysis
+from blogforge_ai.schemas.analysis_schemas import AnalysisResult
 from blogforge_ai.rag.knowledge_base_repository import KnowledgeBaseRepository
 from blogforge_ai.database.session import db_manager
 from uuid import UUID
@@ -64,6 +66,14 @@ class KnowledgeBaseService:
                 ))
             return results
 
+    def ingest_analysis(self, research_id: UUID, analysis_result: AnalysisResult) -> UUID:
+        with db_manager.session() as session:
+            knowledge_repository = KnowledgeBaseRepository(session=session)
+            analysis = self._create_analysis(
+                research_id=research_id, analysis_result=analysis_result)
+            analysis = knowledge_repository.save_analysis(analysis)
+            return analysis.id
+
     def _create_research_chunks(self, research_output: ResearchResult, source_ids: dict, research_id: UUID) -> list[ResearchChunk]:
         chunks = self.chunking_service.chunk_research(
             research_result=research_output, source_ids=source_ids)
@@ -100,6 +110,18 @@ class KnowledgeBaseService:
             ))
 
         return research_sources
+
+    def _create_analysis(self, research_id: UUID, analysis_result: AnalysisResult) -> Analysis:
+
+        return Analysis(
+            research_id=research_id,
+            title=analysis_result.title,
+            overview=analysis_result.overview,
+            developments=analysis_result.developments,
+            limitations=analysis_result.limitations,
+            future_scope=analysis_result.future_scope,
+            references=analysis_result.references
+        )
 
 
 knowledge_base_service = KnowledgeBaseService()

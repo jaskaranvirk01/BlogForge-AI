@@ -1,0 +1,71 @@
+from sqlalchemy import DateTime, func, text, ForeignKey, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
+from uuid import UUID
+from blogforge_ai.database.base import Base
+from datetime import datetime
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from blogforge_ai.database.models.research import Research
+
+
+class Analysis(Base):
+    __tablename__ = 'analysis'
+
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text('gen_random_uuid()')
+    )
+
+    research_id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey('research.id', ondelete='CASCADE'),
+        index=True,
+        nullable=False
+    )
+
+    title: Mapped[str] = mapped_column(
+        Text,
+        nullable=False
+    )
+
+    overview: Mapped[str] = mapped_column(
+        Text,
+        nullable=False
+    )
+
+    developments: Mapped[list] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=list
+    )
+
+    limitations: Mapped[list] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=list
+    )
+
+    future_scope: Mapped[list] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=list
+    )
+
+    references: Mapped[list] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=list
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False
+    )
+
+    research: Mapped['Research'] = relationship(
+        back_populates='analyses'
+    )

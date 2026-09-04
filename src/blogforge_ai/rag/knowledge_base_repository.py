@@ -2,6 +2,7 @@ from blogforge_ai.database.session import Session
 from blogforge_ai.database.models.research import Research
 from blogforge_ai.database.models.research_source import ResearchSource
 from blogforge_ai.database.models.research_chunk import ResearchChunk
+from blogforge_ai.database.models.analysis import Analysis
 from sqlalchemy import select
 from uuid import UUID
 
@@ -24,6 +25,11 @@ class KnowledgeBaseRepository:
         self.session.add(research)
         self.session.flush()
         return research
+
+    def save_analysis(self, analysis: Analysis) -> Analysis:
+        self.session.add(analysis)
+        self.session.flush()
+        return analysis
 
     def retrieve_similar_chunks(self, research_id: UUID, query_embedding: list[float], top_k: int = 5) -> list:
         cosine_distance = ResearchChunk.embedding.cosine_distance(

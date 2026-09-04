@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from blogforge_ai.database.models.research_source import ResearchSource
     from blogforge_ai.database.models.research_chunk import ResearchChunk
+    from blogforge_ai.database.models.analysis import Analysis
 
 
 class Research(Base):
@@ -39,4 +40,9 @@ class Research(Base):
     chunks: Mapped[list["ResearchChunk"]] = relationship(
         back_populates="research",
         cascade="all, delete-orphan"
+    )
+
+    analyses: Mapped[list['Analysis']] = relationship(
+        back_populates='research',
+        cascade='all,delete-orphan'
     )

@@ -56,3 +56,13 @@ class KnowledgeBaseRepository:
         results = self.session.query(Analysis).where(
             Analysis.research_id == research_id)
         return results.all()
+
+    def retrieve_chunks_by_ids(self, chunk_ids: list[UUID]) -> list[ResearchChunk]:
+
+        if len(chunk_ids) == 0:
+            return []
+
+        chunks = self.session.query(ResearchChunk).filter(
+            ResearchChunk.id in chunk_ids).all()
+
+        return chunks

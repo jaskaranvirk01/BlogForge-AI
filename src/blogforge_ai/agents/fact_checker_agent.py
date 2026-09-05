@@ -15,7 +15,7 @@ class FactCheckingAgent:
             FactCheckResult)
 
     def retrieve_analyses(self, research_id: UUID) -> list[Analysis]:
-        analyses = self.knowledge_base_service.retrieve_analysis(
+        analyses = self.knowledge_base_service.retrieve_analyses(
             research_id=research_id)
 
         return analyses
@@ -25,4 +25,26 @@ class FactCheckingAgent:
 
         for analysis in analyses:
             for claim in analysis.developments:
-                claims.append(claim)
+                claims.append(AnalysisItem.model_validate(claim))
+
+            for claim in analysis.limitations:
+                claims.append(AnalysisItem.model_validate(claim))
+
+            for claim in analysis.future_scope:
+                claims.append(AnalysisItem.model_validate(claim))
+
+        return claims
+
+    def retrieve_evidence(self, analysis_item: AnalysisItem):
+        chunk_ids = []
+        for evidence in analysis_item.evidence:
+            chunk_ids.append(evidence.chunk_id)
+
+        if len(chunk_ids) == 0:
+            return []
+
+        chunks = self.knowledge_base_service.retrieve_chunks_by_ids(
+            chunk_ids=chunk_ids)
+        return chunks
+
+    def verify_claims()

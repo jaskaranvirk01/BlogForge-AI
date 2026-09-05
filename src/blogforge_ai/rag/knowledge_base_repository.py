@@ -51,3 +51,8 @@ class KnowledgeBaseRepository:
 
         results = self.session.execute(stmt)
         return results.all()
+
+    def retrieve_analyses(self, research_id: UUID) -> list[Analysis]:
+        results = self.session.query(Analysis).where(
+            Analysis.research_id == research_id)
+        return results.all()

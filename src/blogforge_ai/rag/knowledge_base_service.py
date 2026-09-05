@@ -74,6 +74,13 @@ class KnowledgeBaseService:
             analysis = knowledge_repository.save_analysis(analysis)
             return analysis.id
 
+    def retrieve_analysis(self, research_id: UUID) -> list[Analysis]:
+        with db_manager.session() as session:
+            knowledge_repository = KnowledgeBaseRepository(session=session)
+            analyses = knowledge_repository.retrieve_analysis(
+                research_id=research_id)
+        return analyses
+
     def _create_research_chunks(self, research_output: ResearchResult, source_ids: dict, research_id: UUID) -> list[ResearchChunk]:
         chunks = self.chunking_service.chunk_research(
             research_result=research_output, source_ids=source_ids)

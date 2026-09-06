@@ -100,6 +100,13 @@ class KnowledgeBaseService:
                 fact_check=fact_check)
             return fact_check.id
 
+    def retrieve_fact_check_by_id(self, fact_check_id: UUID) -> FactCheck:
+        with db_manager.session() as session:
+            knowledge_repository = KnowledgeBaseRepository(session=session)
+            fact_check = knowledge_repository.retrieve_fact_check_by_id(
+                fact_check_id=fact_check_id)
+        return fact_check
+
     def retrieve_chunks_by_ids(self, chunk_ids: list[UUID]) -> list[ResearchChunk]:
         with db_manager.session() as session:
             knowledge_repository = KnowledgeBaseRepository(session=session)

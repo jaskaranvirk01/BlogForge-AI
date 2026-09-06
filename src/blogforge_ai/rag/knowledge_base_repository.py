@@ -37,6 +37,11 @@ class KnowledgeBaseRepository:
         self.session.flush()
         return fact_check
 
+    def retrieve_fact_check_by_id(self, fact_check_id: UUID) -> FactCheck | None:
+        result = self.session.query(FactCheck).where(
+            FactCheck.id == fact_check_id).first()
+        return result
+
     def retrieve_similar_chunks(self, research_id: UUID, query_embedding: list[float], top_k: int = 5) -> list:
         cosine_distance = ResearchChunk.embedding.cosine_distance(
             query_embedding)

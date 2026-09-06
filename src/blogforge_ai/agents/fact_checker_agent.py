@@ -74,17 +74,12 @@ class FactCheckingAgent:
         verification_input = {
             "claims": verification_inputs
         }
-        print(f'Vrification input len :{len(verification_inputs)} ')
-        for item in verification_inputs:
-            print(item)
+
         messages = [SystemMessage(content=FACT_CHECKING_PROMPT), HumanMessage(
             content=json.dumps(verification_input)
         )]
 
         verification_results = self.fact_checking_llm.invoke(messages)
-        print('llm result')
-        print(verification_results)
-
         return verification_results
 
     def build_fact_check_result(self, analysis: Analysis,  verification_result: VerificationResult) -> FactCheckResult:

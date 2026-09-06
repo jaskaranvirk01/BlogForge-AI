@@ -6,6 +6,8 @@ from blogforge_ai.database.models.research import Research
 from blogforge_ai.database.models.research_chunk import ResearchChunk
 from blogforge_ai.database.models.research_source import ResearchSource
 from blogforge_ai.database.models.analysis import Analysis
+from blogforge_ai.database.models.fact_check import FactCheck
+from blogforge_ai.schemas.fact_checker_schemas import FactCheckResult
 from blogforge_ai.schemas.analysis_schemas import AnalysisResult
 from blogforge_ai.rag.knowledge_base_repository import KnowledgeBaseRepository
 from blogforge_ai.database.session import db_manager
@@ -88,6 +90,16 @@ class KnowledgeBaseService:
                 research_id=research_id)
         return analysis
 
+    def ingest_fact_check(self, analysis_id: UUID, fact_check_result: FactCheckResult) -> UUID:
+        with db_manager.session() as session:
+            knowledge_repository = KnowledgeBaseRepository(session=session)
+            fact_check = self._create_fact_check(
+                analysis_id=analysis_id, fact_check_result=fact_check_result)
+
+            fact_check = knowledge_repository.save_fact_check(
+                fact_check=fact_check)
+            return fact_check.id
+
     def retrieve_chunks_by_ids(self, chunk_ids: list[UUID]) -> list[ResearchChunk]:
         with db_manager.session() as session:
             knowledge_repository = KnowledgeBaseRepository(session=session)
@@ -150,6 +162,17 @@ class KnowledgeBaseService:
             references=[
                 item.model_dump(mode="json")
                 for item in analysis_result.references]
+        )
+
+    def _create_fact_check(self, analysis_id: UUID, fact_check_result: FactCheckResult) -> FactCheck:
+        return FactCheck(
+            analysis_id=analysis_id,
+            title=fact_check_result.title,
+            overview=fact_check_result.overview,
+            claims=[claim.model_dump(mode="json")
+                    for claim in fact_check_result.claims],
+            references=[reference.model_dump(mode="json")
+                        for reference in fact_check_result.references]
         )
 
 

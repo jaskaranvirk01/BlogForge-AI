@@ -7,24 +7,25 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from blogforge_ai.database.models.research import Research
-    from blogforge_ai.database.models.fact_check import FactCheck
+    from blogforge_ai.database.models.analysis import Analysis
 
 
-class Analysis(Base):
-    __tablename__ = 'analysis'
+class FactCheck(Base):
+    __tablename__ = 'fact_checks'
 
     id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         primary_key=True,
-        server_default=text('gen_random_uuid()')
+        server_default=text('gen_random_uuid()'),
+        nullable=False
     )
 
-    research_id: Mapped[UUID] = mapped_column(
+    analysis_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
-        ForeignKey('research.id', ondelete='CASCADE'),
+        ForeignKey('analysis.id', ondelete='CASCADE'),
         index=True,
-        nullable=False
+        nullable=False,
+        unique=True
     )
 
     title: Mapped[str] = mapped_column(
@@ -37,19 +38,7 @@ class Analysis(Base):
         nullable=False
     )
 
-    developments: Mapped[list] = mapped_column(
-        JSONB,
-        nullable=False,
-        default=list
-    )
-
-    limitations: Mapped[list] = mapped_column(
-        JSONB,
-        nullable=False,
-        default=list
-    )
-
-    future_scope: Mapped[list] = mapped_column(
+    claims: Mapped[list] = mapped_column(
         JSONB,
         nullable=False,
         default=list
@@ -67,12 +56,6 @@ class Analysis(Base):
         nullable=False
     )
 
-    research: Mapped['Research'] = relationship(
-        back_populates='analyses'
-    )
-
-    fact_check: Mapped["FactCheck | None"] = relationship(
-        back_populates="analysis",
-        cascade="all, delete-orphan",
-        uselist=False
+    analysis: Mapped['Analysis'] = relationship(
+        back_populates='fact_check'
     )

@@ -2,6 +2,7 @@ from blogforge_ai.database.session import Session
 from blogforge_ai.database.models.research import Research
 from blogforge_ai.database.models.research_source import ResearchSource
 from blogforge_ai.database.models.research_chunk import ResearchChunk
+from blogforge_ai.database.models.fact_check import FactCheck
 from blogforge_ai.database.models.analysis import Analysis
 from sqlalchemy import select
 from uuid import UUID
@@ -30,6 +31,11 @@ class KnowledgeBaseRepository:
         self.session.add(analysis)
         self.session.flush()
         return analysis
+
+    def save_fact_check(self, fact_check: FactCheck) -> FactCheck:
+        self.session.add(fact_check)
+        self.session.flush()
+        return fact_check
 
     def retrieve_similar_chunks(self, research_id: UUID, query_embedding: list[float], top_k: int = 5) -> list:
         cosine_distance = ResearchChunk.embedding.cosine_distance(

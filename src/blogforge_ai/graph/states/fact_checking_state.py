@@ -10,3 +10,4 @@ class FactCheckState(TypedDict):
     retrieved_claims: RetrievedClaims
     fact_check_result: FactCheckResult
     fact_check_status: str
+    fact_check_id: UUID

@@ -5,3 +5,4 @@ from blogforge_ai.database.models.research import Research
 from blogforge_ai.database.models.research_source import ResearchSource
 from blogforge_ai.database.models.research_chunk import ResearchChunk
 from blogforge_ai.database.models.analysis import Analysis
+from blogforge_ai.database.models.fact_check import FactCheck

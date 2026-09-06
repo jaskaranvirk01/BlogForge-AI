@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from enum import Enum
-from uuid import UUID
 from blogforge_ai.schemas.analysis_schemas import Evidence, Reference
+from blogforge_ai.schemas.analysis_schemas import AnalysisItem
 
 
 class VerificationVerdict(str, Enum):
@@ -17,12 +17,23 @@ class FactCheckItem(BaseModel):
     evidence: list[Evidence]
 
 
+class RetrievedClaims(BaseModel):
+    claims:  list[AnalysisItem]
+
+
+class VerificationItem(BaseModel):
+    claim: str
+    explanation: str
+    verdict: VerificationVerdict
+    evidence: list[Evidence]
+
+
+class VerificationResult(BaseModel):
+    verifications: list[VerificationItem]
+
+
 class FactCheckResult(BaseModel):
     title: str
     overview: str
-
-    developments: list[FactCheckItem]
-    limitations: list[FactCheckItem]
-    future_scope: list[FactCheckItem]
-
+    claims: list[FactCheckItem]
     references: list[Reference]

@@ -81,6 +81,13 @@ class KnowledgeBaseService:
                 research_id=research_id)
         return analyses
 
+    def retrieve_latest_analysis(self, research_id: UUID) -> Analysis:
+        with db_manager.session() as session:
+            knowledge_repository = KnowledgeBaseRepository(session=session)
+            analysis = knowledge_repository.retrieve_latest_analysis(
+                research_id=research_id)
+        return analysis
+
     def retrieve_chunks_by_ids(self, chunk_ids: list[UUID]) -> list[ResearchChunk]:
         with db_manager.session() as session:
             knowledge_repository = KnowledgeBaseRepository(session=session)

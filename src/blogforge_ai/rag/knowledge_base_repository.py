@@ -57,12 +57,17 @@ class KnowledgeBaseRepository:
             Analysis.research_id == research_id)
         return results.all()
 
+    def retrieve_latest_analysis(self, research_id: UUID) -> Analysis | None:
+        result = self.session.query(Analysis).where(
+            Analysis.research_id == research_id).order_by(Analysis.created_at.desc()).first()
+        return result
+
     def retrieve_chunks_by_ids(self, chunk_ids: list[UUID]) -> list[ResearchChunk]:
 
         if len(chunk_ids) == 0:
             return []
 
         chunks = self.session.query(ResearchChunk).filter(
-            ResearchChunk.id in chunk_ids).all()
+            ResearchChunk.id.in_(chunk_ids)).all()
 
         return chunks

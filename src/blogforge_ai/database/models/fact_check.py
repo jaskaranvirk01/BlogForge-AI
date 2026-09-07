@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from blogforge_ai.database.models.analysis import Analysis
+    from blogforge_ai.database.models.draft import Draft
 
 
 class FactCheck(Base):
@@ -57,5 +58,8 @@ class FactCheck(Base):
     )
 
     analysis: Mapped['Analysis'] = relationship(
+        back_populates='fact_check'
+    )
+    drafts: Mapped[list['Draft']] = relationship(
         back_populates='fact_check'
     )

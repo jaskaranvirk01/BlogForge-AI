@@ -1,13 +1,13 @@
 from sqlalchemy import String, DateTime, func, text, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
 from uuid import UUID
 from blogforge_ai.database.base import Base
 from datetime import datetime
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from blogforge_ai.database.models.blog import Blog
+    from blogforge_ai.database.models.fact_check import FactCheck
 
 
 class Draft(Base):
@@ -19,29 +19,38 @@ class Draft(Base):
         server_default=text('gen_random_uuid()')
     )
 
-    blog_id: Mapped[UUID] = mapped_column(
+    fact_check_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
-        ForeignKey('blogs.id', ondelete='CASCADE'),
+        ForeignKey('fact_checks.id', ondelete='CASCADE'),
         nullable=False,
         index=True
     )
 
     title: Mapped[str] = mapped_column(
-        String(255),
+        Text,
         nullable=False
     )
 
-    content: Mapped[str | None] = mapped_column(
+    introduction: Mapped[str] = mapped_column(
         Text,
-        nullable=True
+        nullable=False
     )
 
-    status: Mapped[str] = mapped_column(
-        String(50),
+    sections: Mapped[dict] = mapped_column(
+        JSONB,
         nullable=False,
-        default='draft'
+        default=list
     )
 
+    conclusion: Mapped[str] = mapped_column(
+        Text,
+        nullable=False
+    )
+    references: Mapped[dict] = mapped_column(
+        JSONB,
+        nullable=False,
+        default=list
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -55,6 +64,6 @@ class Draft(Base):
         nullable=False,
     )
 
-    blog: Mapped['Blog'] = relationship(
+    fact_check: Mapped['FactCheck'] = relationship(
         back_populates='drafts'
     )

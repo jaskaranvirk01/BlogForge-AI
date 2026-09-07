@@ -4,6 +4,7 @@ from blogforge_ai.database.models.research_source import ResearchSource
 from blogforge_ai.database.models.research_chunk import ResearchChunk
 from blogforge_ai.database.models.fact_check import FactCheck
 from blogforge_ai.database.models.analysis import Analysis
+from blogforge_ai.database.models.draft import Draft
 from sqlalchemy import select
 from uuid import UUID
 
@@ -36,6 +37,11 @@ class KnowledgeBaseRepository:
         self.session.add(fact_check)
         self.session.flush()
         return fact_check
+
+    def save_blog_draft(self, draft: Draft) -> Draft:
+        self.session.add(draft)
+        self.session.flush()
+        return draft
 
     def retrieve_fact_check_by_id(self, fact_check_id: UUID) -> FactCheck | None:
         result = self.session.query(FactCheck).where(

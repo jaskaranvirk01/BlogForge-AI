@@ -6,6 +6,8 @@ from blogforge_ai.database.models.research import Research
 from blogforge_ai.database.models.research_chunk import ResearchChunk
 from blogforge_ai.database.models.research_source import ResearchSource
 from blogforge_ai.database.models.analysis import Analysis
+from blogforge_ai.database.models.draft import Draft
+from blogforge_ai.schemas.writer_schemas import WriterLLMResult
 from blogforge_ai.database.models.fact_check import FactCheck
 from blogforge_ai.schemas.fact_checker_schemas import FactCheckResult
 from blogforge_ai.schemas.analysis_schemas import AnalysisResult
@@ -107,6 +109,14 @@ class KnowledgeBaseService:
                 fact_check_id=fact_check_id)
         return fact_check
 
+    def ingest_blog_draft(self, fact_check_id: UUID, writer_result: WriterLLMResult) -> UUID:
+        with db_manager.session() as session:
+            knowledge_repository = KnowledgeBaseRepository(session=session)
+            draft = self._create_draft(
+                fact_check_id=fact_check_id, writer_result=writer_result)
+            draft = knowledge_repository.save_blog_draft(draft=draft)
+        return draft.id
+
     def retrieve_chunks_by_ids(self, chunk_ids: list[UUID]) -> list[ResearchChunk]:
         with db_manager.session() as session:
             knowledge_repository = KnowledgeBaseRepository(session=session)
@@ -180,6 +190,18 @@ class KnowledgeBaseService:
                     for claim in fact_check_result.claims],
             references=[reference.model_dump(mode="json")
                         for reference in fact_check_result.references]
+        )
+
+    def _create_draft(self, fact_check_id: UUID, writer_result: WriterLLMResult) -> Draft:
+        return Draft(
+            fact_check_id=fact_check_id,
+            title=writer_result.blog_title,
+            introduction=writer_result.blog_introduction,
+            sections=[section.model_dump(mode='json')
+                      for section in writer_result.sections],
+            conclusion=writer_result.conclusion,
+            references=[reference.model_dump(mode="json")
+                        for reference in writer_result.references]
         )
 
 

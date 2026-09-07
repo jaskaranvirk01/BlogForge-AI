@@ -1,6 +1,5 @@
 from langgraph.graph import StateGraph, START, END
 from blogforge_ai.graph.nodes.research_nodes import plan_research_node, search_sources_node, source_selection_node, get_selected_sources_node, extract_selected_sources_node, create_research_result_node, save_research_node
-from blogforge_ai.schemas.research_schemas import BlogRequest
 from blogforge_ai.graph.states.research_state import ResearchState
 
 builder = StateGraph(ResearchState)
@@ -26,28 +25,3 @@ builder.add_edge('save_research', END)
 
 
 research_graph = builder.compile()
-
-
-blog_request = BlogRequest(
-    topic="Impact of Artificial Intelligence on Software Development",
-    target_audience="Software developers",
-    content_type="technical blog",
-    desired_length=1500,
-    tone="professional",
-    additional_instructions="Focus on practical benefits, risks, and current trends",
-)
-
-initial_state = {
-    'blog_request': blog_request,
-    'research_status': 'Researching'
-
-}
-
-
-result = research_graph.invoke(initial_state)
-
-
-print(result['research_status'])
-print()
-print()
-print(result['research_id'])

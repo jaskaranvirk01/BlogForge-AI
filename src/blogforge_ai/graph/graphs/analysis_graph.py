@@ -2,8 +2,6 @@ from langgraph.graph import StateGraph, START, END
 from blogforge_ai.graph.nodes.analysis_nodes import query_planning_node, chunk_ranking_node, chunk_retrieval_node, generate_analysis_node, context_building_node, save_analysis_node
 from blogforge_ai.graph.states.analysis_state import AnalysisState
 from blogforge_ai.schemas.research_schemas import BlogRequest
-from rich import print
-from uuid import UUID
 builder = StateGraph(AnalysisState)
 
 builder.add_node('query_planning', query_planning_node)
@@ -24,27 +22,3 @@ builder.add_edge('save_analysis', END)
 
 
 analysis_graph = builder.compile()
-
-
-blog_request = BlogRequest(
-    topic="Impact of Artificial Intelligence on Software Development",
-    target_audience="Software developers",
-    content_type="technical blog",
-    desired_length=1500,
-    tone="professional",
-    additional_instructions="Focus on practical benefits, risks, and current trends",
-)
-
-research_id = 'b09b3a8b-de07-41d6-8a64-56d1672eb784'
-
-initial_state = AnalysisState(
-    blog_request=blog_request,
-    research_id=UUID(research_id),
-    analysis_status='Started'
-)
-
-
-res = analysis_graph.invoke(initial_state)
-
-
-print(res)

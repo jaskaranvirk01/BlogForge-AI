@@ -1,4 +1,5 @@
-from blogforge_ai.agents.research_agent import research_agent, ResearchResult
+from blogforge_ai.agents.research_agent import research_agent
+from blogforge_ai.schemas.research_schemas import ResearchResult
 from blogforge_ai.graph.states.research_state import ResearchState
 from blogforge_ai.rag.knowledge_base_service import knowledge_base_service
 

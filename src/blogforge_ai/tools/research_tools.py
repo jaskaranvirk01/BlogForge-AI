@@ -31,17 +31,28 @@ def web_search_tool(search_input: SearchInput) -> SearchOutput | None:
 
 @tool
 def extract_content_tool(source: ExtractionInput) -> ExtractionOutput | None:
-    '''This tool uses tavily extract api to extract raw content from the provided sources'''
+    """This tool uses Tavily extract API to extract raw content from the provided source."""
+
     try:
         response = tavily_client.extract(urls=source.url)
+
+        results = response.get("results", [])
+
+        if not results:
+            return None
+
+        result = results[0]
+
         content = ExtractedContent(
-            url=response['results'][0]['url'],
-            content=response['results'][0]['raw_content'],
+            url=result["url"],
+            content=result["raw_content"],
             title=source.title,
             extracted_at=datetime.now()
         )
+
         return ExtractionOutput(
             content=content
         )
+
     except Exception as e:
         raise e

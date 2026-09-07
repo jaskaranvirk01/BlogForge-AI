@@ -82,6 +82,9 @@ class ResearchAgent:
             extracted_output = self.extract_content_tool.invoke(
                 {'source': extraction_input})
 
+            if not extracted_output:
+                continue
+
             extracted_sources.append(
                 SelectedSourceData(source=selected_source.source, selection_reason=selected_source.selection_reason,
                                    extracted_content=extracted_output)

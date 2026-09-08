@@ -1,5 +1,5 @@
 from blogforge_ai.llm.client import llm
-from blogforge_ai.schemas.analysis_schemas import AnalysisQueries, AnalysisResult, AnalysisChunks, RetrievalResult, Evidence, LLMResult
+from blogforge_ai.schemas.analysis_schemas import AnalysisQueries, AnalysisResult, AnalysisChunks, RetrievalResult, Evidence, LLMResult, Reference
 from blogforge_ai.rag.knowledge_base_service import knowledge_base_service
 from langchain_core.messages import SystemMessage, HumanMessage
 from blogforge_ai.schemas.research_schemas import BlogRequest
@@ -97,7 +97,22 @@ class AnalysisAgent:
 
         return mapped_evidences
 
-    def _map_
+    def _map_sources(self, chunks: list[RetrievalResult]) -> dict[str, Reference]:
+        mapped_sources = {}
+        unique_sources = {}
+
+        for chunk in chunks:
+            if chunk.source_id not in unique_sources:
+                unique_sources[chunk.source_id] = chunk
+
+        for index, chunk in enumerate(unique_sources.values()):
+            mapped_sources[f'S{index+1}'] = Reference(
+                source_id=chunk.source_id,
+                title=chunk.source_title,
+                url=chunk.source_url
+            )
+
+        return mapped_sources
 
 
 analysis_agent = AnalysisAgent()

@@ -1,6 +1,6 @@
 from blogforge_ai.llm.client import llm
 from blogforge_ai.rag.knowledge_base_service import knowledge_base_service
-from blogforge_ai.schemas.fact_checker_schemas import FactCheckResult, RetrievedClaims, VerificationResult, FactCheckItem
+from blogforge_ai.schemas.fact_checker_schemas import FactCheckResult, RetrievedClaims, VerificationResult, FactCheckItem, AnalysisContent
 from blogforge_ai.schemas.analysis_schemas import AnalysisItem
 from langchain_core.messages import SystemMessage, HumanMessage
 from blogforge_ai.database.models.analysis import Analysis
@@ -17,13 +17,13 @@ class FactCheckingAgent:
         self.fact_checking_llm = self.llm.with_structured_output(
             VerificationResult)
 
-    def retrieve_analysis(self, research_id: UUID) -> Analysis:
+    def retrieve_analysis(self, research_id: UUID) -> AnalysisContent:
         analysis = self.knowledge_base_service.retrieve_latest_analysis(
             research_id=research_id)
 
-        return analysis
+        return AnalysisContent.model_validate(analysis)
 
-    def retrieve_claims(self, analysis: Analysis) -> RetrievedClaims:
+    def retrieve_claims(self, analysis: AnalysisContent) -> RetrievedClaims:
         claims = []
 
         for claim in analysis.developments:
@@ -82,7 +82,7 @@ class FactCheckingAgent:
         verification_results = self.fact_checking_llm.invoke(messages)
         return verification_results
 
-    def build_fact_check_result(self, analysis: Analysis,  verification_result: VerificationResult) -> FactCheckResult:
+    def build_fact_check_result(self, analysis: AnalysisContent,  verification_result: VerificationResult) -> FactCheckResult:
         claims = []
 
         for verification in verification_result.verifications:

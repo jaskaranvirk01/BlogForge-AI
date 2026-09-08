@@ -16,7 +16,7 @@ def get_fact_check_node(state: WriterState) -> dict:
 def prepare_llm_input_node(state: WriterState) -> dict:
     print(state['writer_status'])
     llm_input = writer_agent.prepare_writer_input(
-        fact_check=state['fact_check'], blog_request=state['blog_request'])
+        fact_check=state['fact_check'], blog_request=state['blog_request'], human_feedback=state['human_feedback'])
 
     return {
         'llm_input': llm_input,

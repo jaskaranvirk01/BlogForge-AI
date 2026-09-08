@@ -15,16 +15,16 @@ def router(state: GlobalState):
 
 builder = StateGraph(GlobalState)
 
-# builder.add_node('research_node', research_workflow_node)
+builder.add_node('research_node', research_workflow_node)
 builder.add_node('analysis_node', analysis_workflow_node)
 builder.add_node('fact_check_node', fact_check_workflow_node)
 builder.add_node('writer_node', writer_workflow_node)
 builder.add_node('human_review_node', human_review_node)
 
 
-# builder.add_edge(START, 'research_node')
-builder.add_edge(START, 'analysis_node')
-# builder.add_edge('research_node', 'analysis_node')
+builder.add_edge(START, 'research_node')
+# builder.add_edge(START, 'analysis_node')
+builder.add_edge('research_node', 'analysis_node')
 builder.add_edge('analysis_node', 'fact_check_node')
 builder.add_edge('fact_check_node', 'writer_node')
 builder.add_edge('writer_node', 'human_review_node')
@@ -34,39 +34,47 @@ builder.add_conditional_edges('human_review_node', router, {
 })
 
 
+global_graph = builder.compile(checkpointer=checkpointer)
+
+
+blog_request = BlogRequest(
+    topic="Iphone 17",
+    target_audience="Teenagers",
+    content_type="Brief summary",
+    desired_length=150,
+    tone="professional",
+    additional_instructions="Focus on a brief introduction type blog",
+)
+initial_state = {
+    'blog_request': blog_request,
+    'workflow_status': 'Started'
+}
+
+
 config = {
     'configurable': {
         'thread_id': 'blog-review-001'
     }
 }
 
+
+res = global_graph.invoke(initial_state, config=config)
+
+decision = input('Approve or Reject ? ').strip()
+feedback = None
+
+if decision.lower() == 'reject'.lower():
+    feedback = input('Enter Your Feedback : ').strip()
+
+
 resume_command = Command(
     resume={
-        'decision': 'Reject',
-        'feedback': 'reduce the words count to 45 words total'
+        'decision': decision.capitalize(),
+        'feedback': feedback
     }
 )
 
 
-global_graph = builder.compile(checkpointer=checkpointer)
-
-
-blog_request = BlogRequest(
-    topic="Mercedes S class",
-    target_audience="Car enthusiasts",
-    content_type="Informative blog",
-    desired_length=150,
-    tone="professional",
-    additional_instructions="Focus on providing details outlook of the car",
-)
-research_id = 'f9cc66c8-9a0a-45fd-9513-324475cfc6b9'
-initial_state = {
-    'blog_request': blog_request,
-    'research_id': UUID(research_id),
-    'workflow_status': 'Started'
-}
-
-res = global_graph.invoke(initial_state, config=config)
-print(res)
 result = global_graph.invoke(resume_command, config=config)
+
 print(result)

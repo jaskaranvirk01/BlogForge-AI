@@ -20,6 +20,31 @@ class Reference(BaseModel):
     url: str
 
 
+class LLMEvidence(BaseModel):
+    evidence_id: str
+
+
+class LLMReference(BaseModel):
+    source_id: str
+    title: str
+    url: str
+
+
+class LLMAnalysisItem(BaseModel):
+    claim: str
+    explanation: str
+    evidence: list[LLMEvidence]
+
+
+class LLMResult(BaseModel):
+    title: str
+    overview: str
+    developments: list[LLMAnalysisItem]
+    limitations: list[LLMAnalysisItem]
+    future_scope: list[LLMAnalysisItem]
+    references: list[LLMReference]
+
+
 class AnalysisResult(BaseModel):
     title: str
     overview: str

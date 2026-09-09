@@ -1,9 +1,8 @@
 from blogforge_ai.llm.client import llm
 from blogforge_ai.rag.knowledge_base_service import knowledge_base_service
-from blogforge_ai.schemas.fact_checker_schemas import FactCheckResult, RetrievedClaims, VerificationResult, FactCheckItem, AnalysisContent
+from blogforge_ai.schemas.fact_checker_schemas import FactCheckResult, RetrievedClaims, VerificationResult, FactCheckItem, AnalysisContent, LLMVerificationResult, Evidence, VerificationItem
 from blogforge_ai.schemas.analysis_schemas import AnalysisItem
 from langchain_core.messages import SystemMessage, HumanMessage
-from blogforge_ai.database.models.analysis import Analysis
 from blogforge_ai.database.models.research_chunk import ResearchChunk
 from blogforge_ai.prompts.fact_checking_prompts import FACT_CHECKING_PROMPT
 from uuid import UUID
@@ -15,7 +14,7 @@ class FactCheckingAgent:
         self.llm = llm
         self.knowledge_base_service = knowledge_base_service
         self.fact_checking_llm = self.llm.with_structured_output(
-            VerificationResult)
+            LLMVerificationResult)
 
     def retrieve_analysis(self, research_id: UUID) -> AnalysisContent:
         analysis = self.knowledge_base_service.retrieve_latest_analysis(
@@ -51,24 +50,37 @@ class FactCheckingAgent:
             chunk_ids=chunk_ids)
         return chunks
 
-    def verify_claims(self, claims: RetrievedClaims) -> VerificationResult:
+    def verify_claims(self, claims: RetrievedClaims) -> tuple[LLMVerificationResult, dict[str, Evidence]]:
 
         verification_inputs = []
+        evidence_map = {}
+        evidence_count = 1
 
         for analysis_item in claims.claims:
 
             evidence_chunks = self.retrieve_evidence(
                 analysis_item=analysis_item)
 
+            llm_evidence = []
+
+            for chunk in evidence_chunks:
+                evidence_id = f'E{evidence_count}'
+                evidence_count += 1
+
+                evidence_map[evidence_id] = Evidence(
+                    source_id=chunk.research_source_id,
+                    chunk_id=chunk.id
+                )
+
+                llm_evidence.append({
+                    'evidence_id': evidence_id,
+                    'content': chunk.content
+                })
+
             verification_inputs.append({
                 'claim': analysis_item.claim,
                 'explanation': analysis_item.explanation,
-                'evidence': [{
-                    "source_id": str(chunk.research_source_id),
-                    "chunk_id": str(chunk.id),
-                    "content": chunk.content
-                } for chunk in evidence_chunks
-                ]
+                'evidence': llm_evidence
             })
 
         verification_input = {
@@ -80,7 +92,37 @@ class FactCheckingAgent:
         )]
 
         verification_results = self.fact_checking_llm.invoke(messages)
-        return verification_results
+
+        expected_count = len(claims.claims)
+        actual_count = len(verification_results.verifications)
+
+        if actual_count != expected_count:
+            raise ValueError(
+                f"Fact-checking LLM returned {actual_count} verifications "
+                f"for {expected_count} claims."
+            )
+        return verification_results, evidence_map
+
+    def resolve_evidence(self, verification_result: LLMVerificationResult, evidence_map: dict[str, Evidence]) -> VerificationResult:
+        verifications = []
+        for verification in verification_result.verifications:
+            evidences = []
+            for item in verification.evidence:
+                evidence = evidence_map[item.evidence_id]
+                evidences.append(Evidence(
+                    chunk_id=evidence.chunk_id,
+                    source_id=evidence.source_id
+                ))
+            verifications.append(VerificationItem(
+                claim=verification.claim,
+                explanation=verification.explanation,
+                verdict=verification.verdict,
+                evidence=evidences
+            ))
+
+        return VerificationResult(
+            verifications=verifications
+        )
 
     def build_fact_check_result(self, analysis: AnalysisContent,  verification_result: VerificationResult) -> FactCheckResult:
         claims = []

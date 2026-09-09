@@ -23,7 +23,6 @@ builder.add_node('human_review_node', human_review_node)
 
 
 builder.add_edge(START, 'research_node')
-# builder.add_edge(START, 'analysis_node')
 builder.add_edge('research_node', 'analysis_node')
 builder.add_edge('analysis_node', 'fact_check_node')
 builder.add_edge('fact_check_node', 'writer_node')

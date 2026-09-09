@@ -25,13 +25,32 @@ def retrieve_claims_node(state: FactCheckState) -> dict:
 
 def verify_claims_node(state: FactCheckState) -> dict:
     print(state['fact_check_status'])
-    verifications = fact_checking_agent.verify_claims(
+    llm_result, evidence_map = fact_checking_agent.verify_claims(
         claims=state['retrieved_claims'])
+    return {
+        'llm_result': llm_result,
+        'evidence_map': evidence_map,
+        'fact_check_status': 'Fact Checked'
+    }
+
+
+def resolve_evidence_node(state: FactCheckState) -> dict:
+    print(state['fact_check_status'])
+    verification_result = fact_checking_agent.resolve_evidence(
+        verification_result=state['llm_result'], evidence_map=state['evidence_map'])
+    return {
+        'verification_result': verification_result,
+        "fact_check_status": "Evidence Resolved"
+    }
+
+
+def prepare_result_node(state: FactCheckState) -> dict:
+    print(state['fact_check_status'])
     result = fact_checking_agent.build_fact_check_result(
-        analysis=state['analysis'], verification_result=verifications)
+        analysis=state['analysis'], verification_result=state['verification_result'])
     return {
         'fact_check_result': result,
-        'fact_check_status': 'Fact Checked'
+        'fact_check_status': 'Fact Check Done'
     }
 
 

@@ -50,3 +50,18 @@ class FactCheckResult(BaseModel):
     overview: str
     claims: list[FactCheckItem]
     references: list[Reference]
+
+
+class LLMVerificationEvidence(BaseModel):
+    evidence_id: str
+
+
+class LLMVerificationItem(BaseModel):
+    claim: str
+    explanation: str
+    verdict: VerificationVerdict
+    evidence: list[LLMVerificationEvidence]
+
+
+class LLMVerificationResult(BaseModel):
+    verifications: list[LLMVerificationItem]

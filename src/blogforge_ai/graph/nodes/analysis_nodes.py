@@ -35,28 +35,41 @@ def chunk_ranking_node(state: AnalysisState) -> dict:
 
 def context_building_node(state: AnalysisState) -> dict:
     print(state['analysis_status'])
-    context = analysis_agent.build_analysis_context(
+    analysis_context, evidence_map, source_map = analysis_agent.build_analysis_context(
         chunks=state['ranked_chunks'])
     return {
-        'analysis_context': context,
+        'analysis_context': analysis_context,
+        'evidence_map': evidence_map,
+        'source_map': source_map,
         'analysis_status': 'Context Generated'
     }
 
 
 def generate_analysis_node(state: AnalysisState) -> dict:
     print(state['analysis_status'])
-    analysis = analysis_agent.generate_analysis(
+    llm_result = analysis_agent.generate_analysis(
         blog_request=state['blog_request'], analysis_context=state['analysis_context'])
     return {
-        'generated_analysis': analysis,
+        'llm_result': llm_result,
         'analysis_status': 'Analysis Generated'
+    }
+
+
+def create_analysis_result_node(state: AnalysisState) -> dict:
+    print(state['analysis_status'])
+    analysis_result = analysis_agent.prepare_analysis_result(
+        llm_result=state['llm_result'], evidence_map=state['evidence_map'], source_map=state['source_map']
+    )
+    return {
+        'analysis_result': analysis_result,
+        'analysis_status': 'Analysis object Created'
     }
 
 
 def save_analysis_node(state: AnalysisState) -> dict:
     print(state['analysis_status'])
     analysis_id = knowledge_base_service.ingest_analysis(
-        research_id=state['research_id'], analysis_result=state['generated_analysis'])
+        research_id=state['research_id'], analysis_result=state['analysis_result'])
     return {
         'analysis_id': analysis_id,
         'analysis_status': 'Analysis Saved'

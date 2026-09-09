@@ -1,5 +1,5 @@
 from blogforge_ai.llm.client import llm
-from blogforge_ai.schemas.analysis_schemas import AnalysisQueries, AnalysisResult, AnalysisChunks, RetrievalResult, Evidence, LLMResult, Reference
+from blogforge_ai.schemas.analysis_schemas import AnalysisQueries, AnalysisResult, AnalysisItem, AnalysisChunks, RetrievalResult, Evidence, LLMResult, Reference
 from blogforge_ai.rag.knowledge_base_service import knowledge_base_service
 from langchain_core.messages import SystemMessage, HumanMessage
 from blogforge_ai.schemas.research_schemas import BlogRequest
@@ -52,31 +52,63 @@ class AnalysisAgent:
 
         return sorted_chunks
 
-    def build_analysis_context(self, chunks: list[RetrievalResult]) -> tuple[str, dict[str, Evidence]]:
+    def build_analysis_context(self, chunks: list[RetrievalResult]) -> tuple[str, dict[str, Evidence], dict[str, Reference]]:
 
         chunks_to_include = chunks[:self.chunk_limit]
 
         evidence_map = self._map_evidence(chunks_to_include)
+        source_map = self._map_sources(chunks=chunks_to_include)
+
+        source_id_map = {
+            reference.source_id: llm_source_id
+            for llm_source_id, reference in source_map.items()
+        }
 
         evidence_blocks = []
+        source_blocks = []
 
         for index, chunk in enumerate(chunks_to_include):
-            llm_id = f'E{index+1}'
+            llm_evidence_id = f'E{index+1}'
+            llm_source_id = source_id_map[chunk.source_id]
             evidence_blocks.append(f'''\n
-            EVIDENCE ID - {llm_id}\n
+            EVIDENCE ID - {llm_evidence_id}\n
+            SOURCE ID : {llm_source_id}\n
             Source Title:{chunk.source_title}\n
             Source URL:{chunk.source_url}\n
             \n\n
             Content :\n
             {chunk.content}\n
             ''')
-        analysis_context = '\n\n'.join(evidence_blocks)
-        return analysis_context, evidence_map
+
+        for llm_source_id, reference in source_map.items():
+            source_blocks.append(
+                f'''
+            SOURCE ID : {llm_source_id}\n
+            Source Title : {reference.title}\n
+            Source Url : {reference.url}\n
+            '''
+            )
+
+        evidence_context = '\n\n'.join(evidence_blocks)
+        source_context = '\n\n'.join(source_blocks)
+
+        analysis_context = f"""
+        SOURCE CONTEXT:
+
+        {source_context}
+
+
+        EVIDENCE CONTEXT:
+
+        {evidence_context}
+        """
+
+        return analysis_context, evidence_map, source_map
 
     def generate_analysis(self, blog_request: BlogRequest, analysis_context: str) -> LLMResult:
         messages = [SystemMessage(
             content=ANALYSIS_PROMPT), HumanMessage(content=f'''
-            BLOG REQUEST: 
+            BLOG REQUEST:
             {blog_request.model_dump_json(indent=1)}
             \n\n
             ANALYSIS CONTEXT:
@@ -114,36 +146,86 @@ class AnalysisAgent:
 
         return mapped_sources
 
+    def prepare_analysis_result(self, llm_result: LLMResult, evidence_map: dict[str, Evidence], source_map: dict[str, Reference]) -> AnalysisResult:
+
+        developments = []
+        limitations = []
+        future_scope = []
+        references = []
+
+        for llm_item in llm_result.developments:
+            result_evidence = []
+
+            for llm_evidence in llm_item.evidence:
+                evidence = evidence_map[llm_evidence.evidence_id]
+                result_evidence.append(
+                    Evidence(
+                        chunk_id=evidence.chunk_id,
+                        source_id=evidence.source_id
+                    )
+                )
+
+            developments.append(AnalysisItem(
+                claim=llm_item.claim,
+                explanation=llm_item.explanation,
+                evidence=result_evidence
+            ))
+
+        for llm_item in llm_result.limitations:
+            result_evidence = []
+
+            for llm_evidence in llm_item.evidence:
+                evidence = evidence_map[llm_evidence.evidence_id]
+                result_evidence.append(
+                    Evidence(
+                        chunk_id=evidence.chunk_id,
+                        source_id=evidence.source_id
+                    )
+                )
+
+            limitations.append(AnalysisItem(
+                claim=llm_item.claim,
+                explanation=llm_item.explanation,
+                evidence=result_evidence
+            ))
+        for llm_item in llm_result.future_scope:
+            result_evidence = []
+
+            for llm_evidence in llm_item.evidence:
+                evidence = evidence_map[llm_evidence.evidence_id]
+                result_evidence.append(
+                    Evidence(
+                        chunk_id=evidence.chunk_id,
+                        source_id=evidence.source_id
+                    )
+                )
+
+            future_scope.append(AnalysisItem(
+                claim=llm_item.claim,
+                explanation=llm_item.explanation,
+                evidence=result_evidence
+            ))
+
+        for llm_item in llm_result.references:
+            reference = source_map[llm_item.source_id]
+
+            references.append(Reference(
+                source_id=reference.source_id,
+                title=reference.title,
+                url=reference.url
+            ))
+
+        return AnalysisResult(
+            title=llm_result.title,
+            overview=llm_result.overview,
+            developments=developments,
+            limitations=limitations,
+            future_scope=future_scope,
+            references=references
+        )
+
 
 analysis_agent = AnalysisAgent()
 
 
 # ==============================================
-
-research_id = '39f9a357-8d53-4862-9bce-73f35ac8108e'
-
-
-blog_request = BlogRequest(
-    topic="Iphone 17",
-    target_audience="Teenagers",
-    content_type="Brief summary",
-    desired_length=150,
-    tone="professional",
-    additional_instructions="Focus on a brief introduction type blog",
-)
-
-
-queries = analysis_agent.plan_retrieval_queries(blog_request=blog_request)
-chunks = analysis_agent.retrieve_analysis_chunks(
-    analysis_queries=queries, research_id=research_id)
-selected_chunks = analysis_agent.rank_and_deduplicate_chunks(
-    analysis_chunks=chunks)
-
-context, evidence_map = analysis_agent.build_analysis_context(
-    chunks=selected_chunks)
-
-
-analysis = analysis_agent.generate_analysis(
-    blog_request=blog_request, analysis_context=context)
-
-print(analysis)

@@ -9,13 +9,29 @@ class WriterInput(BaseModel):
     fact_check_id: UUID
 
 
+class LLMFactCheckEvidence(BaseModel):
+    evidence_id: str
+
+
+class LLMFactCheckItem(BaseModel):
+    claim: str
+    explanation: str
+    evidence: list[LLMFactCheckEvidence]
+
+
+class LLMReference(BaseModel):
+    source_id: str
+    title: str
+    url: str
+
+
 class WriterLLMInput(BaseModel):
     blog_request: BlogRequest
     human_feedback: str | None
     fact_check_title: str
     fact_check_overview: str
-    verified_claims: list[FactCheckItem]
-    references: list[Reference]
+    verified_claims: list[LLMFactCheckItem]
+    references: list[LLMReference]
 
 
 class BlogSection(BaseModel):
@@ -24,6 +40,14 @@ class BlogSection(BaseModel):
 
 
 class WriterLLMResult(BaseModel):
+    blog_title: str
+    blog_introduction: str
+    sections: list[BlogSection]
+    conclusion: str
+    references: list[LLMReference]
+
+
+class WriterResult(BaseModel):
     blog_title: str
     blog_introduction: str
     sections: list[BlogSection]

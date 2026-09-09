@@ -15,28 +15,40 @@ def get_fact_check_node(state: WriterState) -> dict:
 
 def prepare_llm_input_node(state: WriterState) -> dict:
     print(state['writer_status'])
-    llm_input = writer_agent.prepare_writer_input(
+    llm_input, evidence_map, reference_map = writer_agent.prepare_writer_input(
         fact_check=state['fact_check'], blog_request=state['blog_request'], human_feedback=state['human_feedback'])
 
     return {
         'llm_input': llm_input,
+        'evidence_map': evidence_map,
+        'reference_map': reference_map,
         'writer_status': 'LLM Input prepared'
     }
 
 
 def blog_writing_node(state: WriterState) -> dict:
     print(state['writer_status'])
-    blog_draft = writer_agent.write_blog(llm_input=state['llm_input'])
+    llm_result = writer_agent.write_blog(llm_input=state['llm_input'])
     return {
-        'blog_draft': blog_draft,
+        'llm_result': llm_result,
         'writer_status': 'Blog Drafted'
+    }
+
+
+def create_writer_result_node(state: WriterState) -> dict:
+    print(state['writer_status'])
+    writer_result = writer_agent.create_writer_result(
+        llm_result=state['llm_result'], reference_map=state['reference_map'])
+    return {
+        'writer_result': writer_result,
+        'writer_status': "Writer Result created"
     }
 
 
 def save_blog_draft_node(state: WriterState) -> dict:
     print(state['writer_status'])
     draft_id = knowledge_base_service.ingest_blog_draft(
-        fact_check_id=state['fact_check_id'], writer_result=state['blog_draft'])
+        fact_check_id=state['fact_check_id'], writer_result=state['writer_result'])
     return {
         'draft_id': draft_id,
         'writer_status': 'Blog Draft Saved'

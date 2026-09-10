@@ -25,26 +25,3 @@ builder.add_edge('save_analysis', END)
 
 
 analysis_graph = builder.compile()
-
-
-# research_id = '39f9a357-8d53-4862-9bce-73f35ac8108e'
-
-
-# blog_request = BlogRequest(
-#     topic="Iphone 17",
-#     target_audience="Teenagers",
-#     content_type="Brief summary",
-#     desired_length=150,
-#     tone="professional",
-#     additional_instructions="Focus on a brief introduction type blog",
-# )
-
-# initial_state = {
-#     'blog_request': blog_request,
-#     'research_id': UUID(research_id),
-#     'analysis_status': 'started'
-# }
-
-# res = analysis_graph.invoke(initial_state)
-
-# print(res)

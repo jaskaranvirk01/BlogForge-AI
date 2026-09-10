@@ -30,17 +30,3 @@ blog_request = BlogRequest(
     tone="professional",
     additional_instructions="Focus on a brief introduction type blog",
 )
-
-fact_check_id = '010a2b0c-a8a4-412b-997e-334cf440320e'
-
-initial_state = {
-    'blog_request': blog_request,
-    'fact_check_id': UUID(fact_check_id),
-    'human_feedback': '',
-    'writer_status': 'Started'
-}
-
-
-res = writer_graph.invoke(initial_state)
-
-print(res)

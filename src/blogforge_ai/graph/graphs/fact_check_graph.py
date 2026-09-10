@@ -23,14 +23,3 @@ builder.add_edge('save_fact_check', END)
 
 
 fact_check_graph = builder.compile()
-
-research_id = '39f9a357-8d53-4862-9bce-73f35ac8108e'
-
-
-initial_state = {
-    'research_id': UUID(research_id),
-    'fact_check_status': 'Started'
-}
-fact_check_result = fact_check_graph.invoke(initial_state)
-
-print(fact_check_result)

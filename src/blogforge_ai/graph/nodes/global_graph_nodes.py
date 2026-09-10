@@ -56,7 +56,7 @@ def writer_workflow_node(state: GlobalState) -> dict:
     }
     writer_result = writer_graph.invoke(initial_state)
     return {
-        'blog_draft': writer_result['blog_draft'],
+        'blog_draft': writer_result['writer_result'],
         'draft_id': writer_result['draft_id'],
         'workflow_status': 'Drafted'
     }

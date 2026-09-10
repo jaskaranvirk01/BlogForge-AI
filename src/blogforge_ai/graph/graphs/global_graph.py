@@ -59,21 +59,30 @@ config = {
 
 res = global_graph.invoke(initial_state, config=config)
 
-decision = input('Approve or Reject ? ').strip()
-feedback = None
+while True:
 
-if decision.lower() == 'reject'.lower():
-    feedback = input('Enter Your Feedback : ').strip()
+    decision = input("Approve or Reject? ").strip()
 
+    feedback = None
 
-resume_command = Command(
-    resume={
-        'decision': decision.capitalize(),
-        'feedback': feedback
-    }
-)
+    if decision.lower() == "reject":
+        feedback = input("Enter Your Feedback: ").strip()
 
+    resume_command = Command(
+        resume={
+            "decision": decision.capitalize(),
+            "feedback": feedback
+        }
+    )
 
-result = global_graph.invoke(resume_command, config=config)
+    result = global_graph.invoke(
+        resume_command,
+        config=config
+    )
 
-print(result)
+    if decision.lower() == "approve":
+        print(result)
+        break
+
+    # If rejected, the graph runs Writer again
+    # and interrupts again at human_review_node.

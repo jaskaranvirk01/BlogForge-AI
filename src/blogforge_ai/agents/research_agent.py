@@ -3,6 +3,9 @@ from blogforge_ai.schemas.research_schemas import BlogRequest,  ResearchPlan, Se
 from blogforge_ai.llm.client import llm
 from langchain_core.messages import SystemMessage, HumanMessage
 from blogforge_ai.prompts.research_prompts import RESEARCH_PLANNING_PROMPT, RESEARCH_SOURCE_SELECTION_PROMPT
+from blogforge_ai.exceptions.research import ResearchSearchError, ResearchExtractionError, ResearchGenerationError
+from blogforge_ai.exceptions.error_codes import ErrorCodes
+from tavily.exceptions import MissingAPIKeyError, InvalidAPIKeyError, UsageLimitExceededError, BadRequestError, ForbiddenError, TimeoutError
 
 
 class ResearchAgent:
@@ -19,8 +22,17 @@ class ResearchAgent:
 
         messages = [SystemMessage(content=RESEARCH_PLANNING_PROMPT), HumanMessage(
             content=blog_request.model_dump_json(indent=2))]
-
-        return self.research_planning_llm.invoke(messages)
+        try:
+            return self.research_planning_llm.invoke(messages)
+        except Exception as e:
+            raise ResearchGenerationError(
+                message='Query Planning Failed',
+                error_code=ErrorCodes.RESEARCH_GENERATION_FAILED,
+                workflow='research',
+                node='plan_research',
+                retryable=False,
+                cause=e
+            )
 
     def search_sources(self, research_plan: ResearchPlan, max_results: int) -> SearchOutput:
         queries = research_plan.queries
@@ -28,10 +40,34 @@ class ResearchAgent:
         search_results = []
         seen_source_ids = set()
         for research_query in queries:
+
             search_input = SearchInput(
                 query=research_query.query, max_results=max_results)
-            response = self.web_search_tool.invoke(
-                {'search_input': search_input})
+
+            try:
+
+                response = self.web_search_tool.invoke(
+                    {'search_input': search_input})
+
+            except (MissingAPIKeyError, InvalidAPIKeyError,  UsageLimitExceededError, BadRequestError, ForbiddenError) as e:
+
+                raise ResearchSearchError(
+                    message='Source Search Failed',
+                    error_code=ErrorCodes.RESEARCH_SEARCH_FAILED,
+                    workflow='research',
+                    node='search_sources',
+                    retryable=False,
+                    cause=e
+                )
+            except TimeoutError as e:
+                raise ResearchSearchError(
+                    message='Source Search Failed',
+                    error_code=ErrorCodes.RESEARCH_SEARCH_FAILED,
+                    workflow='research',
+                    node='search_sources',
+                    retryable=True,
+                    cause=e
+                )
 
             for result in response.results:
                 if result.id not in seen_source_ids:
@@ -49,8 +85,18 @@ class ResearchAgent:
             content=RESEARCH_SOURCE_SELECTION_PROMPT),
             HumanMessage(
             content=source_selection_input.model_dump_json(indent=1))]
+        try:
+            return self.source_selection_llm.invoke(messages)
+        except Exception as e:
+            raise ResearchGenerationError(
+                message='Source Selection Failed',
+                error_code=ErrorCodes.RESEARCH_GENERATION_FAILED,
+                workflow='research',
+                node='select_sources',
+                retryable=False,
+                cause=e
 
-        return self.source_selection_llm.invoke(messages)
+            )
 
     def get_selected_sources(self, source_selection: SourceSelection, search_output: SearchOutput) -> list[SelectedSourceData]:
 
@@ -78,12 +124,31 @@ class ResearchAgent:
         for selected_source in selected_sources:
             extraction_input = ExtractionInput(
                 url=selected_source.source.url, title=selected_source.source.title)
+            try:
+                extracted_output = self.extract_content_tool.invoke(
+                    {'source': extraction_input})
 
-            extracted_output = self.extract_content_tool.invoke(
-                {'source': extraction_input})
+                if not extracted_output:
+                    continue
+            except (MissingAPIKeyError, InvalidAPIKeyError,  UsageLimitExceededError, BadRequestError, ForbiddenError) as e:
 
-            if not extracted_output:
-                continue
+                raise ResearchExtractionError(
+                    message='Source Extraction Failed',
+                    error_code=ErrorCodes.RESEARCH_EXTRACTION_FAILED,
+                    workflow='research',
+                    node='extract_selected_sources',
+                    retryable=False,
+                    cause=e
+                )
+            except TimeoutError as e:
+                raise ResearchExtractionError(
+                    message='Source Extraction Failed',
+                    error_code=ErrorCodes.RESEARCH_EXTRACTION_FAILED,
+                    workflow='research',
+                    node='extract_selected_sources',
+                    retryable=True,
+                    cause=e
+                )
 
             extracted_sources.append(
                 SelectedSourceData(source=selected_source.source, selection_reason=selected_source.selection_reason,

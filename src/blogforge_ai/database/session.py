@@ -4,6 +4,8 @@ from sqlalchemy.exc import SQLAlchemyError, ArgumentError
 from blogforge_ai.core.settings import settings
 from contextlib import contextmanager
 from collections.abc import Generator
+from blogforge_ai.exceptions.database import DatabaseError
+from blogforge_ai.exceptions.error_codes import ErrorCodes
 
 
 class DatabaseManager:
@@ -27,6 +29,16 @@ class DatabaseManager:
         try:
             yield db
             db.commit()
+        except SQLAlchemyError as e:
+            db.rollback()
+            raise DatabaseError(
+                message="Database Commit Failed",
+                error_code=ErrorCodes.DATABASE_OPERATION_FAILED,
+                workflow='database',
+                node="session_commit",
+                retryable=False,
+                cause=e
+            )
         except Exception:
             db.rollback()
             raise

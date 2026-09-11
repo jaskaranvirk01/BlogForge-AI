@@ -14,6 +14,9 @@ from blogforge_ai.schemas.analysis_schemas import AnalysisResult
 from blogforge_ai.rag.knowledge_base_repository import KnowledgeBaseRepository
 from blogforge_ai.database.session import db_manager
 from uuid import UUID
+from blogforge_ai.exceptions.database import DatabaseError
+from blogforge_ai.exceptions.research import ResearchPersistenceError
+from blogforge_ai.exceptions.error_codes import ErrorCodes
 
 
 class KnowledgeBaseService:
@@ -22,32 +25,42 @@ class KnowledgeBaseService:
         self.embedding_service = embedding_service
 
     def ingest_research(self, research_output: ResearchResult) -> UUID:
+        try:
+            with db_manager.session() as session:
 
-        with db_manager.session() as session:
+                knowledge_repository = KnowledgeBaseRepository(session=session)
 
-            knowledge_repository = KnowledgeBaseRepository(session=session)
+                research = Research()
 
-            research = Research()
+                saved_research = knowledge_repository.save_research(
+                    research=research)
 
-            saved_research = knowledge_repository.save_research(
-                research=research)
+                research_sources = self._create_research_source(
+                    research_output=research_output, research_id=saved_research.id)
 
-            research_sources = self._create_research_source(
-                research_output=research_output, research_id=saved_research.id)
+                saved_research_sources = knowledge_repository.save_research_sources(
+                    sources=research_sources)
 
-            saved_research_sources = knowledge_repository.save_research_sources(
-                sources=research_sources)
+                source_ids = {
+                    source.source_id: source.id for source in saved_research_sources
+                }
 
-            source_ids = {
-                source.source_id: source.id for source in saved_research_sources
-            }
+                research_chunks = self._create_research_chunks(
+                    research_output=research_output, source_ids=source_ids, research_id=saved_research.id)
 
-            research_chunks = self._create_research_chunks(
-                research_output=research_output, source_ids=source_ids, research_id=saved_research.id)
+                knowledge_repository.save_research_chunks(
+                    chunks=research_chunks)
 
-            knowledge_repository.save_research_chunks(chunks=research_chunks)
-
-        return saved_research.id
+            return saved_research.id
+        except DatabaseError as e:
+            raise ResearchPersistenceError(
+                message='Research Persistence Failed',
+                error_code=ErrorCodes.RESEARCH_PERSISTENCE_FAILED,
+                workflow='research',
+                node='ingest_research',
+                retryable=e.retryable,
+                cause=e
+            )
 
     def retrieve_relevant_chunks(self, research_id: UUID, query: str, top_k: int = 5) -> list[RetrievalResult]:
         query_embedding = self.embedding_service.embed_query(query=query)

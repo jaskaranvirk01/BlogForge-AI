@@ -6,7 +6,10 @@ from blogforge_ai.database.models.fact_check import FactCheck
 from blogforge_ai.database.models.analysis import Analysis
 from blogforge_ai.database.models.draft import Draft
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from uuid import UUID
+from blogforge_ai.exceptions.database import DatabaseError
+from blogforge_ai.exceptions.error_codes import ErrorCodes
 
 
 class KnowledgeBaseRepository:
@@ -14,19 +17,49 @@ class KnowledgeBaseRepository:
         self.session = session
 
     def save_research_sources(self, sources: list[ResearchSource]) -> list[ResearchSource]:
-        self.session.add_all(sources)
-        self.session.flush()
-        return sources
+        try:
+            self.session.add_all(sources)
+            self.session.flush()
+            return sources
+        except SQLAlchemyError as e:
+            raise DatabaseError(
+                message='Research Sources Saving Failed',
+                error_code=ErrorCodes.DATABASE_OPERATION_FAILED,
+                workflow='research',
+                node='save_research_sources',
+                retryable=False,
+                cause=e
+            )
 
     def save_research_chunks(self, chunks: list[ResearchChunk]) -> list[ResearchChunk]:
-        self.session.add_all(chunks)
-        self.session.flush()
-        return chunks
+        try:
+            self.session.add_all(chunks)
+            self.session.flush()
+            return chunks
+        except SQLAlchemyError as e:
+            raise DatabaseError(
+                message='Research Chunk Saving Failed',
+                error_code=ErrorCodes.DATABASE_OPERATION_FAILED,
+                workflow='research',
+                node='save_research_chunks',
+                retryable=False,
+                cause=e
+            )
 
     def save_research(self, research: Research) -> Research:
-        self.session.add(research)
-        self.session.flush()
-        return research
+        try:
+            self.session.add(research)
+            self.session.flush()
+            return research
+        except SQLAlchemyError as e:
+            raise DatabaseError(
+                message='Research Saving Failed',
+                error_code=ErrorCodes.DATABASE_OPERATION_FAILED,
+                workflow='research',
+                node='save_research',
+                retryable=False,
+                cause=e
+            )
 
     def save_analysis(self, analysis: Analysis) -> Analysis:
         self.session.add(analysis)

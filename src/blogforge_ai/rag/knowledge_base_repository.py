@@ -62,9 +62,19 @@ class KnowledgeBaseRepository:
             )
 
     def save_analysis(self, analysis: Analysis) -> Analysis:
-        self.session.add(analysis)
-        self.session.flush()
-        return analysis
+        try:
+            self.session.add(analysis)
+            self.session.flush()
+            return analysis
+        except SQLAlchemyError as e:
+            raise DatabaseError(
+                message='Analysis Saving Failed',
+                error_code=ErrorCodes.DATABASE_OPERATION_FAILED,
+                workflow='analysis',
+                node='save_analysis',
+                retryable=False,
+                cause=e
+            )
 
     def save_fact_check(self, fact_check: FactCheck) -> FactCheck:
         self.session.add(fact_check)

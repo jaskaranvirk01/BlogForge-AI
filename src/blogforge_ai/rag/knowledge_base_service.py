@@ -16,6 +16,7 @@ from blogforge_ai.database.session import db_manager
 from uuid import UUID
 from blogforge_ai.exceptions.database import DatabaseError
 from blogforge_ai.exceptions.research import ResearchPersistenceError
+from blogforge_ai.exceptions.analysis import AnalysisPersistenceError
 from blogforge_ai.exceptions.error_codes import ErrorCodes
 
 
@@ -84,12 +85,22 @@ class KnowledgeBaseService:
             return results
 
     def ingest_analysis(self, research_id: UUID, analysis_result: AnalysisResult) -> UUID:
-        with db_manager.session() as session:
-            knowledge_repository = KnowledgeBaseRepository(session=session)
-            analysis = self._create_analysis(
-                research_id=research_id, analysis_result=analysis_result)
-            analysis = knowledge_repository.save_analysis(analysis)
-            return analysis.id
+        try:
+            with db_manager.session() as session:
+                knowledge_repository = KnowledgeBaseRepository(session=session)
+                analysis = self._create_analysis(
+                    research_id=research_id, analysis_result=analysis_result)
+                analysis = knowledge_repository.save_analysis(analysis)
+                return analysis.id
+        except DatabaseError as e:
+            raise AnalysisPersistenceError(
+                message='Analysis Persistence Failed',
+                error_code=ErrorCodes.ANALYSIS_PERSISTENCE_FAILED,
+                workflow='analysis',
+                node='ingest_analysis',
+                retryable=e.retryable,
+                cause=e
+            )
 
     def retrieve_analyses(self, research_id: UUID) -> list[Analysis]:
         with db_manager.session() as session:

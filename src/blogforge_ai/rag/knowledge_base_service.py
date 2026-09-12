@@ -17,6 +17,7 @@ from uuid import UUID
 from blogforge_ai.exceptions.database import DatabaseError
 from blogforge_ai.exceptions.research import ResearchPersistenceError
 from blogforge_ai.exceptions.analysis import AnalysisPersistenceError
+from blogforge_ai.exceptions.fact_checker import FactCheckPersistenceError
 from blogforge_ai.exceptions.error_codes import ErrorCodes
 
 
@@ -117,14 +118,24 @@ class KnowledgeBaseService:
         return analysis
 
     def ingest_fact_check(self, analysis_id: UUID, fact_check_result: FactCheckResult) -> UUID:
-        with db_manager.session() as session:
-            knowledge_repository = KnowledgeBaseRepository(session=session)
-            fact_check = self._create_fact_check(
-                analysis_id=analysis_id, fact_check_result=fact_check_result)
+        try:
+            with db_manager.session() as session:
+                knowledge_repository = KnowledgeBaseRepository(session=session)
+                fact_check = self._create_fact_check(
+                    analysis_id=analysis_id, fact_check_result=fact_check_result)
 
-            fact_check = knowledge_repository.save_fact_check(
-                fact_check=fact_check)
-            return fact_check.id
+                fact_check = knowledge_repository.save_fact_check(
+                    fact_check=fact_check)
+                return fact_check.id
+        except DatabaseError as e:
+            raise FactCheckPersistenceError(
+                message='Fact Check Persistence Failed',
+                error_code=ErrorCodes.FACT_CHECK_PERSISTENCE_FAILED,
+                workflow='fact_check',
+                node='ingest_fact_check',
+                retryable=e.retryable,
+                cause=e
+            )
 
     def retrieve_fact_check_by_id(self, fact_check_id: UUID) -> FactCheck:
         with db_manager.session() as session:

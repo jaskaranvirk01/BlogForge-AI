@@ -77,9 +77,19 @@ class KnowledgeBaseRepository:
             )
 
     def save_fact_check(self, fact_check: FactCheck) -> FactCheck:
-        self.session.add(fact_check)
-        self.session.flush()
-        return fact_check
+        try:
+            self.session.add(fact_check)
+            self.session.flush()
+            return fact_check
+        except SQLAlchemyError as e:
+            raise DatabaseError(
+                message='Fact Check Saving Failed',
+                error_code=ErrorCodes.DATABASE_OPERATION_FAILED,
+                workflow='fact-check',
+                node='save_fact_check',
+                retryable=False,
+                cause=e
+            )
 
     def save_blog_draft(self, draft: Draft) -> Draft:
         self.session.add(draft)

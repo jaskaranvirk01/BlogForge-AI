@@ -5,7 +5,8 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from blogforge_ai.schemas.research_schemas import BlogRequest
 from blogforge_ai.prompts.analysis_prompts import QUERY_PLANNING_PROMPT, ANALYSIS_PROMPT
 from uuid import UUID
-from rich import print
+from blogforge_ai.exceptions.analysis import AnalysisGenerationError
+from blogforge_ai.exceptions.error_codes import ErrorCodes
 
 
 class AnalysisAgent:
@@ -20,8 +21,18 @@ class AnalysisAgent:
     def plan_retrieval_queries(self, blog_request: BlogRequest) -> AnalysisQueries:
         messages = [SystemMessage(
             content=QUERY_PLANNING_PROMPT), HumanMessage(content=blog_request.model_dump_json(indent=1))]
+        try:
 
-        return self.query_planning_llm.invoke(messages)
+            return self.query_planning_llm.invoke(messages)
+        except Exception as e:
+            raise AnalysisGenerationError(
+                message='Retrievel Query Generation failed',
+                error_code=ErrorCodes.ANALYSIS_GENERATION_FAILED,
+                workflow='analysis',
+                node='plan_retrieval_queries',
+                retryable=False,
+                cause=e
+            )
 
     def retrieve_analysis_chunks(self, analysis_queries: AnalysisQueries, research_id: UUID) -> list[AnalysisChunks]:
 
@@ -114,8 +125,17 @@ class AnalysisAgent:
             ANALYSIS CONTEXT:
             {analysis_context}
             ''')]
-
-        return self.analysis_llm.invoke(messages)
+        try:
+            return self.analysis_llm.invoke(messages)
+        except Exception as e:
+            raise AnalysisGenerationError(
+                message='Analysis Generation failed',
+                error_code=ErrorCodes.ANALYSIS_GENERATION_FAILED,
+                workflow='analysis',
+                node='generate_analysis',
+                retryable=False,
+                cause=e
+            )
 
     def _map_evidence(self, chunks: list[RetrievalResult]) -> dict[str, Evidence]:
 

@@ -1,3 +1,18 @@
+from blogforge_ai.schemas.fact_checker_schemas import (
+    AnalysisContent,
+    FactCheckResult,
+    RetrievedClaims,
+    VerificationResult,
+    LLMVerificationResult,
+)
+from blogforge_ai.graph.graphs.fact_check_graph import (
+    fact_check_graph,
+)
+from blogforge_ai.exceptions.fact_checker import (
+    FactCheckGenerationError,
+    FactCheckRetrievalError,
+    FactCheckPersistenceError,
+)
 from unittest.mock import MagicMock, patch
 import pytest
 from uuid import uuid4
@@ -186,3 +201,230 @@ def test_resolve_evidence_unknown_evidence_id():
             verification_result=verification_result,
             evidence_map=evidence_map,
         )
+
+
+def test_fact_check_workflow_success():
+    research_id = uuid4()
+    analysis_id = uuid4()
+    fact_check_id = uuid4()
+
+    analysis = MagicMock(spec=AnalysisContent)
+    analysis.id = analysis_id
+
+    retrieved_claims = MagicMock(spec=RetrievedClaims)
+    llm_result = MagicMock(spec=LLMVerificationResult)
+    evidence_map = {
+        "E1": MagicMock(),
+    }
+    verification_result = MagicMock(spec=VerificationResult)
+    fact_check_result = MagicMock(spec=FactCheckResult)
+
+    with (
+        patch(
+            "blogforge_ai.graph.nodes.fact_checker_nodes."
+            "fact_checking_agent.retrieve_analysis",
+            return_value=analysis,
+        ) as mock_retrieve_analysis,
+        patch(
+            "blogforge_ai.graph.nodes.fact_checker_nodes."
+            "fact_checking_agent.retrieve_claims",
+            return_value=retrieved_claims,
+        ) as mock_retrieve_claims,
+        patch(
+            "blogforge_ai.graph.nodes.fact_checker_nodes."
+            "fact_checking_agent.verify_claims",
+            return_value=(llm_result, evidence_map),
+        ) as mock_verify_claims,
+        patch(
+            "blogforge_ai.graph.nodes.fact_checker_nodes."
+            "fact_checking_agent.resolve_evidence",
+            return_value=verification_result,
+        ) as mock_resolve_evidence,
+        patch(
+            "blogforge_ai.graph.nodes.fact_checker_nodes."
+            "fact_checking_agent.build_fact_check_result",
+            return_value=fact_check_result,
+        ) as mock_build_fact_check_result,
+        patch(
+            "blogforge_ai.graph.nodes.fact_checker_nodes."
+            "knowledge_base_service.ingest_fact_check",
+            return_value=fact_check_id,
+        ) as mock_ingest_fact_check,
+    ):
+        initial_state = {
+            "research_id": research_id,
+            "fact_check_status": "Starting Fact Check",
+        }
+
+        result = fact_check_graph.invoke(initial_state)
+
+    # Final state
+    assert result["research_id"] == research_id
+    assert result["analysis"] is analysis
+    assert result["retrieved_claims"] is retrieved_claims
+    assert result["llm_result"] is llm_result
+    assert result["evidence_map"] == evidence_map
+    assert result["verification_result"] is verification_result
+    assert result["fact_check_result"] is fact_check_result
+    assert result["fact_check_id"] == fact_check_id
+    assert result["fact_check_status"] == "Fact Check Saved"
+
+    # Node interactions
+    mock_retrieve_analysis.assert_called_once_with(
+        research_id=research_id,
+    )
+
+    mock_retrieve_claims.assert_called_once_with(
+        analysis=analysis,
+    )
+
+    mock_verify_claims.assert_called_once_with(
+        claims=retrieved_claims,
+    )
+
+    mock_resolve_evidence.assert_called_once_with(
+        verification_result=llm_result,
+        evidence_map=evidence_map,
+    )
+
+    mock_build_fact_check_result.assert_called_once_with(
+        analysis=analysis,
+        verification_result=verification_result,
+    )
+
+    mock_ingest_fact_check.assert_called_once_with(
+        analysis_id=analysis_id,
+        fact_check_result=fact_check_result,
+    )
+
+
+def test_fact_check_workflow_analysis_retrieval_failure():
+    research_id = uuid4()
+
+    retrieval_error = FactCheckRetrievalError(
+        message="Analysis Retrieval Failed",
+        error_code="FACT_CHECK_RETRIEVAL_FAILED",
+        workflow="fact_check",
+        node="retrieve_analysis",
+        retryable=False,
+        cause=Exception("simulated retrieval failure"),
+    )
+
+    with patch(
+        "blogforge_ai.graph.nodes.fact_checker_nodes."
+        "fact_checking_agent.retrieve_analysis",
+        side_effect=retrieval_error,
+    ):
+        initial_state = {
+            "research_id": research_id,
+            "fact_check_status": "Starting Fact Check",
+        }
+
+        with pytest.raises(FactCheckRetrievalError) as exc_info:
+            fact_check_graph.invoke(initial_state)
+
+    assert exc_info.value is retrieval_error
+
+
+def test_fact_check_workflow_generation_failure():
+    research_id = uuid4()
+
+    analysis = MagicMock(spec=AnalysisContent)
+
+    generation_error = FactCheckGenerationError(
+        message="Fact Check Generation Failed",
+        error_code="FACT_CHECK_GENERATION_FAILED",
+        workflow="fact_check",
+        node="verify_claims",
+        retryable=False,
+        cause=Exception("simulated LLM failure"),
+    )
+
+    with (
+        patch(
+            "blogforge_ai.graph.nodes.fact_checker_nodes."
+            "fact_checking_agent.retrieve_analysis",
+            return_value=analysis,
+        ),
+        patch(
+            "blogforge_ai.graph.nodes.fact_checker_nodes."
+            "fact_checking_agent.retrieve_claims",
+            return_value=MagicMock(spec=RetrievedClaims),
+        ),
+        patch(
+            "blogforge_ai.graph.nodes.fact_checker_nodes."
+            "fact_checking_agent.verify_claims",
+            side_effect=generation_error,
+        ),
+    ):
+        initial_state = {
+            "research_id": research_id,
+            "fact_check_status": "Starting Fact Check",
+        }
+
+        with pytest.raises(FactCheckGenerationError) as exc_info:
+            fact_check_graph.invoke(initial_state)
+
+    assert exc_info.value is generation_error
+
+
+def test_fact_check_workflow_persistence_failure():
+    research_id = uuid4()
+    analysis_id = uuid4()
+
+    analysis = MagicMock(spec=AnalysisContent)
+    analysis.id = analysis_id
+
+    persistence_error = FactCheckPersistenceError(
+        message="Fact Check Persistence Failed",
+        error_code="FACT_CHECK_PERSISTENCE_FAILED",
+        workflow="fact_check",
+        node="ingest_fact_check",
+        retryable=False,
+        cause=Exception("simulated persistence failure"),
+    )
+
+    with (
+        patch(
+            "blogforge_ai.graph.nodes.fact_checker_nodes."
+            "fact_checking_agent.retrieve_analysis",
+            return_value=analysis,
+        ),
+        patch(
+            "blogforge_ai.graph.nodes.fact_checker_nodes."
+            "fact_checking_agent.retrieve_claims",
+            return_value=MagicMock(spec=RetrievedClaims),
+        ),
+        patch(
+            "blogforge_ai.graph.nodes.fact_checker_nodes."
+            "fact_checking_agent.verify_claims",
+            return_value=(
+                MagicMock(spec=LLMVerificationResult),
+                {},
+            ),
+        ),
+        patch(
+            "blogforge_ai.graph.nodes.fact_checker_nodes."
+            "fact_checking_agent.resolve_evidence",
+            return_value=MagicMock(spec=VerificationResult),
+        ),
+        patch(
+            "blogforge_ai.graph.nodes.fact_checker_nodes."
+            "fact_checking_agent.build_fact_check_result",
+            return_value=MagicMock(spec=FactCheckResult),
+        ),
+        patch(
+            "blogforge_ai.graph.nodes.fact_checker_nodes."
+            "knowledge_base_service.ingest_fact_check",
+            side_effect=persistence_error,
+        ),
+    ):
+        initial_state = {
+            "research_id": research_id,
+            "fact_check_status": "Starting Fact Check",
+        }
+
+        with pytest.raises(FactCheckPersistenceError) as exc_info:
+            fact_check_graph.invoke(initial_state)
+
+    assert exc_info.value is persistence_error

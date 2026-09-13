@@ -7,6 +7,8 @@ from blogforge_ai.database.models.research_chunk import ResearchChunk
 from blogforge_ai.prompts.fact_checking_prompts import FACT_CHECKING_PROMPT
 from uuid import UUID
 import json
+from blogforge_ai.exceptions.fact_checker import FactCheckGenerationError
+from blogforge_ai.exceptions.error_codes import ErrorCodes
 
 
 class FactCheckingAgent:
@@ -90,8 +92,17 @@ class FactCheckingAgent:
         messages = [SystemMessage(content=FACT_CHECKING_PROMPT), HumanMessage(
             content=json.dumps(verification_input)
         )]
-
-        verification_results = self.fact_checking_llm.invoke(messages)
+        try:
+            verification_results = self.fact_checking_llm.invoke(messages)
+        except Exception as e:
+            raise FactCheckGenerationError(
+                message="Fact Check Generation Failed",
+                error_code=ErrorCodes.FACT_CHECK_GENERATION_FAILED,
+                workflow="fact_check",
+                node="verify_claims",
+                retryable=False,
+                cause=e
+            )
 
         expected_count = len(claims.claims)
         actual_count = len(verification_results.verifications)

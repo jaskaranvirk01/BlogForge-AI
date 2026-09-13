@@ -5,6 +5,8 @@ from blogforge_ai.prompts.writer_prompts import BLOG_WRITING_SYSTEM_PROMPT
 from blogforge_ai.schemas.fact_checker_schemas import VerificationVerdict, Evidence, Reference
 from langchain_core.messages import SystemMessage, HumanMessage
 from uuid import UUID
+from blogforge_ai.exceptions.writer import WriterGenerationError
+from blogforge_ai.exceptions.error_codes import ErrorCodes
 
 
 class WriterAgent:
@@ -90,8 +92,17 @@ class WriterAgent:
         messages = [SystemMessage(content=BLOG_WRITING_SYSTEM_PROMPT), HumanMessage(
             content=llm_input.model_dump_json()
         )]
-
-        return self.blog_writing_llm.invoke(messages)
+        try:
+            return self.blog_writing_llm.invoke(messages)
+        except Exception as e:
+            raise WriterGenerationError(
+                message="Blog Draft Generation failed",
+                error_code=ErrorCodes.WRITER_GENERATION_FAILED,
+                workflow="writing",
+                node="write_blog",
+                retryable=False,
+                cause=e,
+            )
 
     def create_writer_result(self, llm_result: WriterLLMResult, reference_map: dict[str, Reference]) -> WriterResult:
 

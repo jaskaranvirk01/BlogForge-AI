@@ -92,9 +92,19 @@ class KnowledgeBaseRepository:
             )
 
     def save_blog_draft(self, draft: Draft) -> Draft:
-        self.session.add(draft)
-        self.session.flush()
-        return draft
+        try:
+            self.session.add(draft)
+            self.session.flush()
+            return draft
+        except SQLAlchemyError as e:
+            raise DatabaseError(
+                message='Blog Draft Saving Failed',
+                error_code=ErrorCodes.DATABASE_OPERATION_FAILED,
+                workflow='writing',
+                node='save_blog_draft',
+                retryable=False,
+                cause=e
+            )
 
     def retrieve_fact_check_by_id(self, fact_check_id: UUID) -> FactCheck | None:
         result = self.session.query(FactCheck).where(

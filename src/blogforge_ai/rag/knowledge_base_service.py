@@ -19,6 +19,7 @@ from blogforge_ai.exceptions.research import ResearchPersistenceError
 from blogforge_ai.exceptions.analysis import AnalysisPersistenceError
 from blogforge_ai.exceptions.fact_checker import FactCheckPersistenceError
 from blogforge_ai.exceptions.error_codes import ErrorCodes
+from blogforge_ai.exceptions.writer import WriterPersistenceError
 
 
 class KnowledgeBaseService:
@@ -145,12 +146,22 @@ class KnowledgeBaseService:
         return fact_check
 
     def ingest_blog_draft(self, fact_check_id: UUID, writer_result: WriterLLMResult) -> UUID:
-        with db_manager.session() as session:
-            knowledge_repository = KnowledgeBaseRepository(session=session)
-            draft = self._create_draft(
-                fact_check_id=fact_check_id, writer_result=writer_result)
-            draft = knowledge_repository.save_blog_draft(draft=draft)
-        return draft.id
+        try:
+            with db_manager.session() as session:
+                knowledge_repository = KnowledgeBaseRepository(session=session)
+                draft = self._create_draft(
+                    fact_check_id=fact_check_id, writer_result=writer_result)
+                draft = knowledge_repository.save_blog_draft(draft=draft)
+            return draft.id
+        except DatabaseError as e:
+            raise WriterPersistenceError(
+                message='Blog Draft Persistence Failed',
+                error_code=ErrorCodes.WRITER_PERSISTENCE_FAILED,
+                workflow='writing',
+                node='ingest_blog_draft',
+                retryable=e.retryable,
+                cause=e
+            )
 
     def retrieve_chunks_by_ids(self, chunk_ids: list[UUID]) -> list[ResearchChunk]:
         with db_manager.session() as session:

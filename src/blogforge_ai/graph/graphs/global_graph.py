@@ -36,53 +36,53 @@ builder.add_conditional_edges('human_review_node', router, {
 global_graph = builder.compile(checkpointer=checkpointer)
 
 
-blog_request = BlogRequest(
-    topic="Iphone 17",
-    target_audience="Teenagers",
-    content_type="Brief summary",
-    desired_length=150,
-    tone="professional",
-    additional_instructions="Focus on a brief introduction type blog",
-)
-initial_state = {
-    'blog_request': blog_request,
-    'workflow_status': 'Started'
-}
+# blog_request = BlogRequest(
+#     topic="Iphone 17",
+#     target_audience="Teenagers",
+#     content_type="Brief summary",
+#     desired_length=150,
+#     tone="professional",
+#     additional_instructions="Focus on a brief introduction type blog",
+# )
+# initial_state = {
+#     'blog_request': blog_request,
+#     'workflow_status': 'Started'
+# }
 
 
-config = {
-    'configurable': {
-        'thread_id': 'blog-review-001'
-    }
-}
+# config = {
+#     'configurable': {
+#         'thread_id': 'blog-review-001'
+#     }
+# }
 
 
-res = global_graph.invoke(initial_state, config=config)
+# res = global_graph.invoke(initial_state, config=config)
 
-while True:
+# while True:
 
-    decision = input("Approve or Reject? ").strip()
+#     decision = input("Approve or Reject? ").strip()
 
-    feedback = None
+#     feedback = None
 
-    if decision.lower() == "reject":
-        feedback = input("Enter Your Feedback: ").strip()
+#     if decision.lower() == "reject":
+#         feedback = input("Enter Your Feedback: ").strip()
 
-    resume_command = Command(
-        resume={
-            "decision": decision.capitalize(),
-            "feedback": feedback
-        }
-    )
+#     resume_command = Command(
+#         resume={
+#             "decision": decision.capitalize(),
+#             "feedback": feedback
+#         }
+#     )
 
-    result = global_graph.invoke(
-        resume_command,
-        config=config
-    )
+#     result = global_graph.invoke(
+#         resume_command,
+#         config=config
+#     )
 
-    if decision.lower() == "approve":
-        print(result)
-        break
+#     if decision.lower() == "approve":
+#         print(result)
+#         break
 
-    # If rejected, the graph runs Writer again
-    # and interrupts again at human_review_node.
+#     # If rejected, the graph runs Writer again
+#     # and interrupts again at human_review_node.

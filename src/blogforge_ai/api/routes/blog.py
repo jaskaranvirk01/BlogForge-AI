@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from blogforge_ai.api.schemas.blog import CreateBlogRequest
 from blogforge_ai.services.graph_service import graph_service
 from blogforge_ai.schemas.research_schemas import BlogRequest
+
 app = FastAPI()
 
 

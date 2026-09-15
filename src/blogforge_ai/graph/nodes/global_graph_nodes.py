@@ -3,11 +3,11 @@ from blogforge_ai.graph.graphs.research_graph import research_graph
 from blogforge_ai.graph.graphs.analysis_graph import analysis_graph
 from blogforge_ai.graph.graphs.fact_check_graph import fact_check_graph
 from blogforge_ai.graph.graphs.writer_graph import writer_graph
+from blogforge_ai.schemas.global_graph_schema import BlogWorkflowStatus
 from langgraph.types import interrupt
 
 
 def research_workflow_node(state: GlobalState) -> dict:
-    print(state['workflow_status'])
     initial_state = {
         'blog_request': state['blog_request'],
         'research_status': 'Researching'
@@ -15,12 +15,10 @@ def research_workflow_node(state: GlobalState) -> dict:
     research_ressult = research_graph.invoke(initial_state)
     return {
         'research_id': research_ressult['research_id'],
-        'workflow_status': 'Researched'
     }
 
 
 def analysis_workflow_node(state: GlobalState) -> dict:
-    print(state['workflow_status'])
     initial_state = {
         'blog_request': state['blog_request'],
         'research_id': state['research_id'],
@@ -29,12 +27,11 @@ def analysis_workflow_node(state: GlobalState) -> dict:
     analysis_result = analysis_graph.invoke(initial_state)
     return {
         'analysis_id': analysis_result['analysis_id'],
-        'workflow_status': 'Analysed'
+
     }
 
 
 def fact_check_workflow_node(state: GlobalState) -> dict:
-    print(state['workflow_status'])
     initial_state = {
         'research_id': state['research_id'],
         'fact_check_status': 'Started'
@@ -42,12 +39,11 @@ def fact_check_workflow_node(state: GlobalState) -> dict:
     fact_check_result = fact_check_graph.invoke(initial_state)
     return {
         'fact_check_id': fact_check_result['fact_check_id'],
-        'workflow_status': 'Facts Checked'
+
     }
 
 
 def writer_workflow_node(state: GlobalState) -> dict:
-    print(state['workflow_status'])
     initial_state = {
         'blog_request': state['blog_request'],
         'fact_check_id': state['fact_check_id'],
@@ -58,7 +54,7 @@ def writer_workflow_node(state: GlobalState) -> dict:
     return {
         'blog_draft': writer_result['writer_result'],
         'draft_id': writer_result['draft_id'],
-        'workflow_status': 'Drafted'
+
     }
 
 
@@ -85,4 +81,40 @@ def human_review_node(state: GlobalState) -> dict:
         'human_decision': decision,
         'human_feedback': feedback
 
+    }
+
+
+def set_research_status_node(state: GlobalState) -> dict:
+    return {
+        'workflow_status': BlogWorkflowStatus.RESEARCHING
+    }
+
+
+def set_analysis_status_node(state: GlobalState) -> dict:
+    return {
+        'workflow_status': BlogWorkflowStatus.ANALYZING
+    }
+
+
+def set_fact_check_status_node(state: GlobalState) -> dict:
+    return {
+        'workflow_status': BlogWorkflowStatus.FACT_CHECKING
+    }
+
+
+def set_writing_status_node(state: GlobalState) -> dict:
+    return {
+        'workflow_status': BlogWorkflowStatus.WRITING
+    }
+
+
+def set_review_status_node(state: GlobalState) -> dict:
+    return {
+        "workflow_status": BlogWorkflowStatus.WAITING_FOR_REVIEW
+    }
+
+
+def set_completed_status_node(state: GlobalState) -> dict:
+    return {
+        "workflow_status": BlogWorkflowStatus.COMPLETED
     }

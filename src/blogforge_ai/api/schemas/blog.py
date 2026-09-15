@@ -13,6 +13,11 @@ class CreateBlogRequest(BaseModel):
     additional_instructions: str | None = None
 
 
+class BlogWorkflowStatusResponse(BaseModel):
+    thread_id: str
+    status: BlogWorkflowStatus
+
+
 class BlogWorkflowResponse(BaseModel):
     thread_id: str
     status: BlogWorkflowStatus

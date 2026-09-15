@@ -2,6 +2,7 @@ from typing import TypedDict, Literal
 from uuid import UUID
 from blogforge_ai.graph.states.research_state import BlogRequest
 from blogforge_ai.schemas.writer_schemas import WriterResult
+from blogforge_ai.schemas.global_graph_schema import BlogWorkflowStatus
 
 
 class GlobalState(TypedDict):
@@ -13,4 +14,4 @@ class GlobalState(TypedDict):
     draft_id: UUID
     human_decision: Literal['Approve', 'Reject'] | None
     human_feedback: str | None
-    workflow_status: str
+    workflow_status: BlogWorkflowStatus

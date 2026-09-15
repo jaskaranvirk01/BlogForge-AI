@@ -1,12 +1,12 @@
 from fastapi import FastAPI
-from blogforge_ai.api.schemas.blog import CreateBlogRequest
+from blogforge_ai.api.schemas.blog import CreateBlogRequest, BlogWorkflowResponse, ReviewBlogRequest
 from blogforge_ai.services.graph_service import graph_service
 from blogforge_ai.schemas.research_schemas import BlogRequest
 
 app = FastAPI()
 
 
-@app.post('/blogs')
+@app.post('/blogs', response_model=BlogWorkflowResponse)
 def create_blog(create_blog_request: CreateBlogRequest):
     blog_request = BlogRequest(
         topic=create_blog_request.topic,
@@ -18,4 +18,20 @@ def create_blog(create_blog_request: CreateBlogRequest):
     )
 
     graph_result = graph_service.start_blog_workflow(blog_request=blog_request)
-    return graph_result
+    return BlogWorkflowResponse(
+        thread_id=graph_result.thread_id,
+        status=graph_result.status,
+        draft=graph_result.draft
+    )
+
+
+@app.post('/blogs/{thread_id}/review', response_model=BlogWorkflowResponse)
+def review_blog(thread_id: str, request: ReviewBlogRequest):
+
+    graph_result = graph_service.resume_blog_workflow(
+        thread_id=thread_id, decision=request.decision, feedback=request.feedback)
+    return BlogWorkflowResponse(
+        thread_id=graph_result.thread_id,
+        status=graph_result.status,
+        draft=graph_result.draft
+    )

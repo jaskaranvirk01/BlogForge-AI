@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from blogforge_ai.schemas.writer_schemas import WriterResult
+from blogforge_ai.schemas.global_graph_schema import BlogWorkflowStatus
 from enum import Enum
 
 
@@ -12,12 +13,25 @@ class CreateBlogRequest(BaseModel):
     additional_instructions: str | None = None
 
 
-class BlogWorkflowStatus(str, Enum):
-    WAITING_FOR_REVIEW = "waiting_for_review"
-    COMPLETED = "completed"
-
-
 class BlogWorkflowResponse(BaseModel):
     thread_id: str
     status: BlogWorkflowStatus
     draft: WriterResult | None
+
+
+class ReviewDecision(str, Enum):
+    APPROVE = 'Approve'
+    REJECT = 'Reject'
+
+
+class ReviewBlogRequest(BaseModel):
+    decision: ReviewDecision
+    feedback: str | None = None
+
+    @model_validator(mode='after')
+    def validate_decision_feedback(self):
+        if self.decision == ReviewDecision.REJECT and (
+            not self.feedback or not self.feedback.strip()
+        ):
+            raise ValueError("Feedback is required when rejecting a draft")
+        return self

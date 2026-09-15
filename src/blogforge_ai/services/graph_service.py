@@ -1,8 +1,10 @@
-from blogforge_ai.graph.graphs.global_graph import global_graph
+from blogforge_ai.graph.graphs.global_graph import global_graph, checkpointer
 from uuid import uuid4
 from blogforge_ai.schemas.research_schemas import BlogRequest
 from blogforge_ai.schemas.global_graph_schema import GraphWorkflowResult, BlogWorkflowStatus
 from langgraph.types import Command
+from blogforge_ai.exceptions.error_codes import ErrorCodes
+from blogforge_ai.exceptions.workflow import WorkflowNotFoundError
 
 
 class GraphService:
@@ -39,6 +41,15 @@ class GraphService:
                 'thread_id': thread_id
             }
         }
+        checkpoint = checkpointer.get(config)
+
+        if not checkpoint:
+            raise WorkflowNotFoundError(
+                message='Workflow with the provided Thread id not found',
+                error_code=ErrorCodes.WORKFLOW_NOT_FOUND,
+                workflow='review',
+                node='resume_blog_workflow',
+            )
 
         resume_value = {
             'decision': decision,
